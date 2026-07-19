@@ -1414,6 +1414,29 @@ function renderCircleTimetable(){
         const d = arcPath(cx, cy, rOuter, rInner, startAngle, endAngle);
         const blockTitle = `${s._completed ? "✅ " : ""}${escapeHtml(s.title)}`;
         svg += `<path d="${d}" fill="${s.color}" class="clockArc" data-id="${s.id}" data-title="${blockTitle.replace(/"/g,"&quot;")}" data-start="${s.start}" data-end="${s.end}" data-color="${s.color}" data-start-angle="${startAngle}" data-end-angle="${endAngle}" opacity="${s._completed ? 0.45 : 0.95}" stroke="var(--surface)" stroke-width="1.5"></path>`;
+
+        let angleSpan = endAngle - startAngle;
+        if(angleSpan <= 0) angleSpan += 360;
+        const midR = (rOuter + rInner) / 2;
+        const arcLenPx = (angleSpan * Math.PI / 180) * midR;
+        const maxChars = Math.floor(arcLenPx / 7);
+
+        if(maxChars >= 2){
+            let midAngle = (startAngle + endAngle) / 2;
+            if(endAngle < startAngle) midAngle = ((startAngle + endAngle + 360) / 2) % 360;
+            const tp = polarToCartesian(cx, cy, midR, midAngle);
+            let rot = midAngle;
+            if(rot > 90 && rot < 270) rot += 180;
+
+            let labelText = s._completed ? `✅ ${s.title}` : s.title;
+            if(labelText.length > maxChars){
+                labelText = maxChars <= 1 ? "" : labelText.slice(0, Math.max(1, maxChars - 1)) + "…";
+            }
+
+            if(labelText){
+                svg += `<text x="${tp.x}" y="${tp.y}" text-anchor="middle" dominant-baseline="middle" class="clockArcLabel" transform="rotate(${rot} ${tp.x} ${tp.y})">${escapeHtml(labelText)}</text>`;
+            }
+        }
     });
 
     const label = formatDateLabel(selectedDate);

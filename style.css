@@ -835,6 +835,8 @@ main{
     cursor:pointer;
     display:flex;
     align-items:center;
+    justify-content:center;
+    text-align:center;
 }
 
 .scheduleBlock:active{
@@ -854,6 +856,7 @@ main{
     line-height:1.25;
     width:100%;
     min-width:0;
+    text-align:center;
 }
 
 .scheduleBlock.tiny .sbTitle{
@@ -1858,6 +1861,17 @@ body.uiHidden .restoreHandle{
 
 .clockArc:active{
     opacity:.7;
+}
+
+.clockArcLabel{
+    font-size:9.5px;
+    font-weight:700;
+    fill:#fff;
+    pointer-events:none;
+    paint-order:stroke;
+    stroke:rgba(0,0,0,.25);
+    stroke-width:2px;
+    stroke-linejoin:round;
 }
 
 .clockLabel{
