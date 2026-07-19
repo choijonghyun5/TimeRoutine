@@ -822,6 +822,20 @@ main{
     background:var(--red);
 }
 
+.clockNowLine{
+    stroke:var(--red);
+    stroke-width:2;
+    stroke-linecap:round;
+    pointer-events:none;
+}
+
+.clockNowDot{
+    fill:var(--red);
+    stroke:var(--surface);
+    stroke-width:1.5;
+    pointer-events:none;
+}
+
 .scheduleBlock{
     position:absolute;
     left:1px;

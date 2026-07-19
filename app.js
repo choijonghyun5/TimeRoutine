@@ -399,6 +399,8 @@ function updateClock(){
 
     if(currentPage === "schedulePage" && currentView === "rect"){
         updateNowLine();
+    }else if(currentPage === "schedulePage" && currentView === "circle"){
+        updateClockNowLine();
     }
 }
 
@@ -1443,8 +1445,11 @@ function renderCircleTimetable(){
     svg += `<text x="${cx}" y="${cy-6}" text-anchor="middle" class="clockCenterLabel">${list.length}개 일정</text>`;
     svg += `<text x="${cx}" y="${cy+14}" text-anchor="middle" class="clockLabel">${selectedDate === todayStr() ? "오늘" : label.main}</text>`;
 
+    svg += `<g id="clockNowLine"></g>`;
+
     clockSvg.innerHTML = svg;
     hideClockTooltip();
+    updateClockNowLine();
 
     clockSvg.querySelectorAll(".clockArc").forEach(path => {
         path.onclick = (e) => {
@@ -1482,6 +1487,33 @@ function renderCircleTimetable(){
             openEventModal(null, startLabel);
         };
     }
+}
+
+function updateClockNowLine(){
+    if(currentView !== "circle") return;
+    if(!clockSvg) return;
+
+    const group = clockSvg.querySelector("#clockNowLine");
+    if(!group) return;
+
+    if(selectedDate !== todayStr()){
+        group.innerHTML = "";
+        return;
+    }
+
+    const cx = 170, cy = 170, rOuter = 158, rInner = 92;
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    const angle = (minutes / 1440) * 360;
+
+    const inner = polarToCartesian(cx, cy, rInner - 10, angle);
+    const outer = polarToCartesian(cx, cy, rOuter + 10, angle);
+    const dot = polarToCartesian(cx, cy, rOuter + 10, angle);
+
+    group.innerHTML = `
+        <line x1="${inner.x}" y1="${inner.y}" x2="${outer.x}" y2="${outer.y}" class="clockNowLine"></line>
+        <circle cx="${dot.x}" cy="${dot.y}" r="4" class="clockNowDot"></circle>
+    `;
 }
 
 /* ============================= */
