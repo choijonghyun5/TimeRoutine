@@ -765,7 +765,7 @@ if(searchAddButton){
 
 const WEEK_DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
-const DEFAULT_ROW_HEIGHT = 40;   // 시간당 고정 높이(px) - 화면에 맞춘 자동 조절 없이 항상 이 값 사용
+const DEFAULT_ROW_HEIGHT = 32;   // 시간당 고정 높이(px) - 화면에 맞춘 자동 조절 없이 항상 이 값 사용
 const DEFAULT_RANGE_START_HOUR = 0;
 const DEFAULT_RANGE_END_HOUR = 24;
 
@@ -872,8 +872,14 @@ function renderRectTimetable(){
             block.style.top = `${topPx}px`;
             block.style.height = `${heightPx}px`;
             block.style.setProperty("--block-color", s.color);
-            block.title = `${s.title} ${s.start}-${s.end}`;
-            block.innerHTML = `<div class="sbTitle">${s._completed ? "✅ " : ""}${escapeHtml(s.title)}</div>`;
+            const blockTitle = `${s._completed ? "✅ " : ""}${escapeHtml(s.title)}`;
+            block.innerHTML = `
+                <div class="sbTitle">${blockTitle}</div>
+                <div class="sbTooltip">
+                    <div class="sbTooltipTitle">${blockTitle}</div>
+                    <div class="sbTooltipTime"><span class="sbTooltipDot" style="--dot-color:${s.color}"></span>${s.start}-${s.end}</div>
+                </div>
+            `;
             block.onclick = (ev) => {
                 ev.stopPropagation();
                 openEventModal(s.id, null, dateStr);

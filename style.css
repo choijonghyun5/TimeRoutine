@@ -688,7 +688,6 @@ main{
     border-radius:28px;
     box-shadow:var(--shadow);
     padding:14px 6px;
-    overflow:hidden;
 }
 
 /* ----- 주간(월~일) 그리드 -----
@@ -698,14 +697,13 @@ main{
 
 .weekGrid{
     display:grid;
-    grid-template-columns:26px repeat(7, minmax(0, 1fr));
+    grid-template-columns:34px repeat(7, minmax(0, 1fr));
     grid-template-rows:auto 1fr;
     width:100%;
     box-sizing:border-box;
     background:var(--surface);
     border-radius:18px;
     padding:8px 3px;
-    overflow:hidden;
 }
 
 .weekCorner{
@@ -821,7 +819,6 @@ main{
     padding:2px 4px;
     background:var(--block-color, var(--blue));
     color:#fff;
-    overflow:hidden;
     box-shadow:0 3px 8px rgba(0,0,0,.12);
     transition:.15s;
     cursor:pointer;
@@ -833,6 +830,10 @@ main{
     transform:scale(.97);
 }
 
+.scheduleBlock:hover{
+    z-index:15;
+}
+
 .scheduleBlock .sbTitle{
     font-size:9px;
     font-weight:700;
@@ -841,10 +842,67 @@ main{
     text-overflow:ellipsis;
     line-height:1.25;
     width:100%;
+    min-width:0;
 }
 
 .scheduleBlock.tiny .sbTitle{
     font-size:8px;
+}
+
+/* ----- 일정 호버 툴팁 (이름 + 시간) ----- */
+
+.sbTooltip{
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 8px);
+    transform:translateX(-50%) translateY(4px);
+    background:rgba(24,24,28,.92);
+    color:#fff;
+    padding:8px 12px;
+    border-radius:10px;
+    font-size:11px;
+    line-height:1.4;
+    white-space:nowrap;
+    box-shadow:0 10px 24px rgba(0,0,0,.28);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease;
+    z-index:30;
+}
+
+.sbTooltip::after{
+    content:"";
+    position:absolute;
+    top:100%;
+    left:50%;
+    transform:translateX(-50%);
+    border:5px solid transparent;
+    border-top-color:rgba(24,24,28,.92);
+}
+
+.scheduleBlock:hover .sbTooltip{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+}
+
+.sbTooltipTitle{
+    font-weight:700;
+    margin-bottom:4px;
+}
+
+.sbTooltipTime{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    opacity:.9;
+}
+
+.sbTooltipDot{
+    width:8px;
+    height:8px;
+    border-radius:2px;
+    flex-shrink:0;
+    background:var(--dot-color, #fff);
 }
 
 @media (min-width:640px){
