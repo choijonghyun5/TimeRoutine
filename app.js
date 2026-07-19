@@ -909,7 +909,7 @@ function updateNowLine(){
     const minutes = now.getHours() * 60 + now.getMinutes();
     if(minutes < currentRangeStartHour * 60 || minutes > currentRangeEndHour * 60) return;
 
-    const topPx = (minutes - currentRangeStartHour * 60) * (currentRowHeight / 60);
+    const topPx = (minutes - currentRangeStartHour * 60) * (currentRowHeight / 60) + 2;
 
     const line = document.createElement("div");
     line.className = "weekNowLine";
