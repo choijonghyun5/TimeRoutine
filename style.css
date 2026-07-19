@@ -299,7 +299,6 @@ body.glass .rectTimetable,
 body.glass .scheduleBlock,
 body.glass .scheduleListItem,
 body.glass .searchRow input,
-body.glass .pngButton,
 body.glass .clockWrap,
 body.glass .calendarDay,
 body.glass .templateChip{
@@ -780,13 +779,14 @@ main{
     position:relative;
     min-width:0;
     border-left:1px solid var(--border);
-    background-image:repeating-linear-gradient(
-        to bottom,
-        var(--border) 0,
-        var(--border) 1px,
-        transparent 1px,
-        transparent var(--row-height, 40px)
+    background-image:radial-gradient(
+        circle,
+        color-mix(in srgb, var(--text) 16%, transparent) 0.6px,
+        transparent 1px
     );
+    background-size:6px var(--row-height, 40px);
+    background-position:0 0;
+    background-repeat:repeat;
 }
 
 .weekDayCol.today{
@@ -825,6 +825,8 @@ main{
     box-shadow:0 3px 8px rgba(0,0,0,.12);
     transition:.15s;
     cursor:pointer;
+    display:flex;
+    align-items:center;
 }
 
 .scheduleBlock:active{
@@ -838,18 +840,7 @@ main{
     overflow:hidden;
     text-overflow:ellipsis;
     line-height:1.25;
-}
-
-.scheduleBlock .sbTime{
-    font-size:7.5px;
-    opacity:.85;
-    margin-top:1px;
-    white-space:nowrap;
-    overflow:hidden;
-}
-
-.scheduleBlock.tiny .sbTime{
-    display:none;
+    width:100%;
 }
 
 .scheduleBlock.tiny .sbTitle{
@@ -887,9 +878,6 @@ main{
     }
     .scheduleBlock .sbTitle{
         font-size:12px;
-    }
-    .scheduleBlock .sbTime{
-        font-size:10px;
     }
 }
 
@@ -1491,16 +1479,6 @@ main{
 
 .scheduleHeadRow .pageTitle{
     margin-bottom:0;
-}
-
-.pngButton{
-    width:44px;
-    height:44px;
-    border-radius:14px;
-    background:var(--card);
-    backdrop-filter:blur(var(--card-blur));
-    box-shadow:var(--shadow);
-    font-size:18px;
 }
 
 .searchRow{

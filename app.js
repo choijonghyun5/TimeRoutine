@@ -313,7 +313,6 @@ const notifyToggle = document.getElementById("notifyToggle");
 
 const scheduleSearchInput = document.getElementById("scheduleSearchInput");
 const searchAddButton = document.getElementById("searchAddButton");
-const exportPngButton = document.getElementById("exportPngButton");
 const captureArea = document.getElementById("captureArea");
 
 const circleView = document.getElementById("circleView");
@@ -361,8 +360,7 @@ function goToPage(pageId){
     navButtons.forEach(b => b.classList.toggle("active", b.dataset.page === pageId));
     window.scrollTo(0, 0);
     if(pageId === "schedulePage" && currentView === "rect"){
-        // 페이지가 실제로 화면에 보인 다음 프레임에 다시 그려야 높이 계산이 정확함
-        requestAnimationFrame(() => renderRectTimetable());
+        renderRectTimetable();
     }
 }
 
@@ -767,12 +765,11 @@ if(searchAddButton){
 
 const WEEK_DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
-const MIN_ROW_HEIGHT = 15;
-const MAX_ROW_HEIGHT = 90;
+const DEFAULT_ROW_HEIGHT = 40;   // 시간당 고정 높이(px) - 화면에 맞춘 자동 조절 없이 항상 이 값 사용
 const DEFAULT_RANGE_START_HOUR = 0;
 const DEFAULT_RANGE_END_HOUR = 24;
 
-let currentRowHeight = 40;
+let currentRowHeight = DEFAULT_ROW_HEIGHT;
 let currentRangeStartHour = DEFAULT_RANGE_START_HOUR;
 let currentRangeEndHour = DEFAULT_RANGE_END_HOUR;
 
@@ -783,26 +780,9 @@ function formatHourAmPm(h){
     return `${period} ${hour12}:00`;
 }
 
-/* 하루 24시간 전체를 항상 표시 (화면에 맞게 시간당 높이만 자동 조절) */
+/* 하루 24시간 전체를 항상 표시 */
 function computeWeekHourRange(weekDates){
     return { startHour: 0, endHour: 24 };
-}
-
-/* 화면(뷰포트) 안에 시간표가 스크롤 없이 다 보이도록 시간당 픽셀 높이를 계산
-   모바일 브라우저는 주소창이 나타났다 사라졌다 하면서 innerHeight가 흔들리므로
-   가능하면 visualViewport.height(실제 보이는 영역)를 기준으로 계산한다. */
-function computeRowHeight(hourCount){
-    const rect = rectTimetable.getBoundingClientRect();
-    const bottomNav = document.querySelector(".bottomNav");
-    const bottomNavH = bottomNav ? bottomNav.offsetHeight + 24 : 100;
-    const headRowH = window.innerWidth >= 640 ? 36 : 28;
-    const gridPadding = 24;
-    const viewportH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-    const top = rect.top > 0 ? rect.top : 190;
-    const available = viewportH - top - bottomNavH - headRowH - gridPadding;
-    let rowHeight = Math.floor(available / hourCount);
-    rowHeight = Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, rowHeight));
-    return rowHeight;
 }
 
 function renderRectTimetable(){
@@ -815,7 +795,7 @@ function renderRectTimetable(){
     currentRangeStartHour = startHour;
     currentRangeEndHour = endHour;
     const hourCount = endHour - startHour;
-    const rowHeight = computeRowHeight(hourCount);
+    const rowHeight = DEFAULT_ROW_HEIGHT;
     currentRowHeight = rowHeight;
     const totalHeight = hourCount * rowHeight;
 
@@ -892,7 +872,8 @@ function renderRectTimetable(){
             block.style.top = `${topPx}px`;
             block.style.height = `${heightPx}px`;
             block.style.setProperty("--block-color", s.color);
-            block.innerHTML = `<div class="sbTitle">${s._completed ? "✅ " : ""}${escapeHtml(s.title)}</div><div class="sbTime">${s.start}-${s.end}</div>`;
+            block.title = `${s.title} ${s.start}-${s.end}`;
+            block.innerHTML = `<div class="sbTitle">${s._completed ? "✅ " : ""}${escapeHtml(s.title)}</div>`;
             block.onclick = (ev) => {
                 ev.stopPropagation();
                 openEventModal(s.id, null, dateStr);
@@ -931,21 +912,6 @@ function updateNowLine(){
     line.className = "weekNowLine";
     line.style.top = `${topPx}px`;
     todayCol.appendChild(line);
-}
-
-let rectResizeTimer = null;
-function scheduleRectResize(){
-    clearTimeout(rectResizeTimer);
-    rectResizeTimer = setTimeout(() => {
-        if(currentPage === "schedulePage" && currentView === "rect"){
-            renderRectTimetable();
-        }
-    }, 200);
-}
-window.addEventListener("resize", scheduleRectResize);
-window.addEventListener("orientationchange", scheduleRectResize);
-if(window.visualViewport){
-    window.visualViewport.addEventListener("resize", scheduleRectResize);
 }
 
 /* ============================= */
@@ -1552,39 +1518,6 @@ function applyTemplate(id){
     saveData();
     renderSchedulePage();
     showToast("템플릿이 적용됐어요.", { icon: "✅" });
-}
-
-/* ============================= */
-/* 이미지(PNG) 저장                */
-/* ============================= */
-
-if(exportPngButton){
-    exportPngButton.onclick = async () => {
-        if(currentView === "calendar"){
-            showToast("사각형·원형·리스트 보기에서 이미지로 저장할 수 있어요.", { icon: "🖼️" });
-            return;
-        }
-        if(typeof html2canvas === "undefined"){
-            showToast("이미지 저장 기능을 불러오는 중이에요. 잠시 후 다시 시도해주세요.", { icon: "⏳" });
-            return;
-        }
-        showToast("이미지를 만들고 있어요…");
-        try{
-            const target = currentView === "rect" ? (rectTimetable.querySelector(".weekGrid") || rectTimetable)
-                         : currentView === "circle" ? document.querySelector(".clockWrap")
-                         : scheduleListWrap;
-            const bg = getComputedStyle(document.body).getPropertyValue("--surface").trim() || "#ffffff";
-            const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: bg });
-            const link = document.createElement("a");
-            link.download = `timeroutine_${selectedDate}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            showToast("이미지가 저장됐어요.");
-        }catch(e){
-            console.error(e);
-            showToast("이미지 저장에 실패했어요.", { icon: "⚠️" });
-        }
-    };
 }
 
 /* ============================= */
