@@ -29,7 +29,6 @@
         <div class="logo">Time<span>.</span></div>
         <div class="headerButtons">
             <button id="ddayHeaderButton" class="ddayHeaderButton" title="디데이">🏁 <span id="ddayHeaderText">디데이</span></button>
-            <button id="notifyButton" title="일정 알림">🔔</button>
             <button id="themeButton">🌙</button>
         </div>
     </header>
@@ -198,12 +197,7 @@
                     </button>
                 </div>
 
-                <div class="settingItem">
-                    <span>🔔 일정 시작 알림</span>
-                    <button class="switchToggle" id="notifyToggle" role="switch" aria-checked="false">
-                        <span class="switchKnob"></span>
-                    </button>
-                </div>
+
 
                 <button class="settingItem" id="googleDriveButton">
                     <span>☁️ 구글 드라이브 자동 저장</span>
@@ -313,16 +307,7 @@
                 </div>
             </div>
 
-            <div class="inputGroup">
-                <label>시작 전 알림</label>
-                <select id="eventNotifySelect">
-                    <option value="0">알림 없음</option>
-                    <option value="5">5분 전</option>
-                    <option value="10">10분 전</option>
-                    <option value="30">30분 전</option>
-                    <option value="60">1시간 전</option>
-                </select>
-            </div>
+
 
             <div class="modalButtons">
                 <button id="eventSaveButton" class="primaryButton">저장</button>

@@ -7,7 +7,7 @@ const STORAGE_KEY = "timeroutine_data_v1";
 const CUSTOM_QUOTE_KEY = "timeroutine_custom_quotes";
 const THEME_KEY = "timeroutine_theme";
 const METAL_DARK_KEY = "timeroutine_metal_dark";
-const NOTIFY_KEY = "timeroutine_notify_enabled";
+
 
 /* ===== Google Drive 자동 저장 설정 =====
    1) https://console.cloud.google.com 에서 프로젝트 생성
@@ -47,7 +47,6 @@ let completingContext = null;    // { scheduleId, dateStr }
 let pendingPhoto = null;
 let viewingPhotoContext = null;
 
-const notifiedKeys = new Set();
 
 let googleAccessToken = null;
 let googleTokenExpiry = 0;
@@ -194,7 +193,6 @@ function loadData(){
         schedules.forEach(s => {
             if(s.tag === undefined) s.tag = "";
             if(s.repeatDays === undefined) s.repeatDays = [];
-            if(s.notifyMinutes === undefined) s.notifyMinutes = 0;
             if(s.completed === undefined) s.completed = false;
             if(s.photos === undefined) s.photos = [];
             if(s.occurrences === undefined) s.occurrences = {};
@@ -310,9 +308,6 @@ const exportButton = document.getElementById("exportButton");
 const importButton = document.getElementById("importButton");
 const importFile = document.getElementById("importFile");
 
-const notifyButton = document.getElementById("notifyButton");
-const notifyToggle = document.getElementById("notifyToggle");
-
 const scheduleSearchInput = document.getElementById("scheduleSearchInput");
 const searchAddButton = document.getElementById("searchAddButton");
 const captureArea = document.getElementById("captureArea");
@@ -328,7 +323,6 @@ const calNextMonthButton = document.getElementById("calNextMonthButton");
 
 const eventTagRow = document.getElementById("eventTagRow");
 const eventWeekdayRow = document.getElementById("eventWeekdayRow");
-const eventNotifySelect = document.getElementById("eventNotifySelect");
 const eventCompleteRow = document.getElementById("eventCompleteRow");
 const eventCompleteButton = document.getElementById("eventCompleteButton");
 
@@ -767,7 +761,7 @@ if(searchAddButton){
 
 const WEEK_DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
-const DEFAULT_ROW_HEIGHT = 26;   // 시간당 고정 높이(px) - 화면에 맞춘 자동 조절 없이 항상 이 값 사용
+const DEFAULT_ROW_HEIGHT = 24;   // 시간당 고정 높이(px) - 화면에 맞춘 자동 조절 없이 항상 이 값 사용
 const DEFAULT_RANGE_START_HOUR = 0;
 const DEFAULT_RANGE_END_HOUR = 24;
 
@@ -867,7 +861,7 @@ function renderRectTimetable(){
             const start = minutesFromHHMM(s.start);
             let end = minutesFromHHMM(s.end);
             if(end <= start) end = start + 30;
-            const topPx = (start - startHour * 60) * (rowHeight / 60);
+            const topPx = (start - startHour * 60) * (rowHeight / 60) + 11;
             const heightPx = Math.max((end - start) * (rowHeight / 60), 16);
             const block = document.createElement("div");
             block.className = "scheduleBlock" + (heightPx <= 24 ? " tiny" : "") + (s._completed ? " completed" : "");
@@ -1078,7 +1072,6 @@ function openEventModal(id, prefillStart, occDate){
         selectedEventColor = COLOR_PRESETS[currentEventPreset].colors[0];
         editingEventTag = "";
         editingEventDays = [];
-        eventNotifySelect.value = "0";
         eventDeleteRow.classList.add("hidden");
         eventCompleteRow.classList.add("hidden");
     }
@@ -1564,76 +1557,7 @@ function applyTemplate(id){
     showToast("템플릿이 적용됐어요.", { icon: "✅" });
 }
 
-/* ============================= */
-/* 알림 (Notification API)         */
-/* ============================= */
 
-function getNotifyEnabled(){
-    return localStorage.getItem(NOTIFY_KEY) === "true";
-}
-
-function updateNotifyUI(){
-    if(notifyToggle){
-        const on = getNotifyEnabled();
-        notifyToggle.classList.toggle("on", on);
-        notifyToggle.setAttribute("aria-checked", on);
-    }
-}
-
-async function toggleNotify(forceOn){
-    const wantOn = forceOn !== undefined ? forceOn : !getNotifyEnabled();
-
-    if(wantOn){
-        if(!("Notification" in window)){
-            showToast("이 브라우저는 알림을 지원하지 않아요.", { icon: "⚠️" });
-            return;
-        }
-        const perm = await Notification.requestPermission();
-        if(perm !== "granted"){
-            showToast("알림 권한이 허용되지 않았어요.", { icon: "🔕" });
-            localStorage.setItem(NOTIFY_KEY, "false");
-            updateNotifyUI();
-            return;
-        }
-    }
-
-    localStorage.setItem(NOTIFY_KEY, String(wantOn));
-    updateNotifyUI();
-    showToast(wantOn ? "일정 알림이 켜졌어요." : "일정 알림이 꺼졌어요.");
-}
-
-if(notifyToggle) notifyToggle.onclick = () => toggleNotify();
-if(notifyButton) notifyButton.onclick = () => toggleNotify();
-
-function checkNotifications(){
-    if(!getNotifyEnabled()) return;
-    if(!("Notification" in window) || Notification.permission !== "granted") return;
-
-    const now = new Date();
-    const todayS = todayStr();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-
-    schedulesForDate(todayS).forEach(s => {
-        if(!s.notifyMinutes || s._completed) return;
-        const key = s.id + "_" + todayS;
-        if(notifiedKeys.has(key)) return;
-
-        const startMin = minutesFromHHMM(s.start);
-        const notifyAt = startMin - s.notifyMinutes;
-
-        if(nowMin >= notifyAt && nowMin < notifyAt + 1){
-            notifiedKeys.add(key);
-            try{
-                new Notification(`${s.notifyMinutes}분 후 "${s.title}" 시작`, {
-                    body: `${s.start} - ${s.end}`,
-                    icon: "icons/icon-192.png"
-                });
-            }catch(e){ /* 알림 생성 실패는 무시 */ }
-        }
-    });
-}
-
-setInterval(checkNotifications, 30 * 1000);
 
 /* ============================= */
 /* 테마                            */
