@@ -1,0 +1,1543 @@
+/* =========================================================
+   그린노트 - 디자인 토큰
+   Cream paper + warm wood + soft plant green
+   ========================================================= */
+:root{
+  --cream:        #F5EFE4;
+  --cream-deep:   #ECE3D2;
+  --paper-line:   rgba(92, 68, 48, 0.06);
+
+  --wood-mid:     #8B6B4A;
+  --wood-dark:    #5C4430;
+  --wood-deep:    #40301F;
+
+  --leaf-deep:    #45603F;
+  --leaf:         #5B7A54;
+  --leaf-light:   #8FAE7C;
+  --leaf-pale:    #C8D9B8;
+
+  --terracotta:   #C97B4A;
+  --terracotta-d: #A85F35;
+
+  --ink:          #3A322A;
+  --ink-soft:     #6B5F51;
+  --ink-faint:    #9C8F7E;
+
+  --card-bg:      #FBF7EF;
+  --shadow-soft:  0 6px 20px rgba(64, 48, 31, 0.10);
+  --shadow-pot:   0 3px 8px rgba(64, 48, 31, 0.18);
+
+  --radius-lg: 26px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+
+  --font-display: "Gowun Batang", serif;
+  --font-body: "Gowun Dodum", sans-serif;
+
+  /* 시간대 변수 - JS가 실시간으로 갱신 */
+  --sky-top: #BFE0F0;
+  --sky-bottom: #F4E6C7;
+  --light-strength: 0.6;
+
+  /* 시간대·날씨·조명을 조합한 장면 색보정 필터 - JS(computeSceneFilter)가 실시간으로 갱신.
+     화분/식물 사진에 이 값을 씌워 배경 조명과 어우러지게 합니다. */
+  --scene-filter: none;
+}
+
+*{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body{ height: 100%; }
+body{
+  margin:0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--cream);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+button{ font-family: inherit; border:none; background:none; cursor:pointer; }
+
+.app{
+  /*
+    배경 사진(day.png = 852 × 1846, 비율 약 0.4615)과 .app 박스의
+    가로세로 비율을 항상 똑같이 맞춰서, 사진이 레터박스 없이 .app을
+    정확히 꽉 채우도록 합니다. 그래야 %로 배치된 조명/가습기/화분 같은
+    UI가 화면 크기와 상관없이 항상 "사진 안"에 위치하게 됩니다.
+
+    아래 두 줄은 "뷰포트에 비율을 유지한 채 최대한 크게 맞추기"
+    공식입니다. width/height 각각 세 후보 중 가장 작은 값을 쓰는데,
+    세 후보가 모두 같은 비율(852/1846)에서 나온 값이라 항상 서로 짝이
+    맞습니다 (레터박스 없는 순수 CSS 리사이즈).
+  */
+  --img-ratio: 0.461538; /* 852 / 1846 */
+  width: min(100vw, calc(100dvh * var(--img-ratio)), 560px);
+  height: min(100dvh, calc(100vw / var(--img-ratio)), calc(560px / var(--img-ratio)));
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  margin: 0 auto;
+  position: relative;
+  background-image: url("assets/day.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-color: var(--cream);
+}
+
+/* ===================== 유리(글래스) 공통 스타일 ===================== */
+/* 상단/하단 UI가 사진 배경 위에 반투명하게 떠 보이도록 하는 공용 톤 */
+:root{
+  --glass-bg:        rgba(255, 252, 244, 0.30);
+  --glass-bg-strong: rgba(255, 252, 244, 0.42);
+  --glass-border:    rgba(255, 255, 255, 0.40);
+  --glass-shadow:    none;
+  --glass-blur:      14px;
+
+  /* 유리 UI 위 글자색 - 밝은 장면에는 기존 갈색 톤, 어두운 장면에는 아래 .is-dark-scene 에서 밝은 톤으로 교체됩니다 */
+  --glass-ink:       var(--wood-deep);
+  --glass-ink-soft:  var(--ink-soft);
+  --glass-ink-faint: var(--ink-faint);
+  --glass-sep:       rgba(92, 68, 48, 0.14);
+  --glass-alert:     var(--terracotta-d);
+  --glass-active-bg: rgba(91, 122, 84, 0.14);
+  --glass-active-ink: var(--leaf-deep);
+}
+
+/* ===================== 어두운 장면: 유리 UI 톤을 밝은 색으로 반전 ===================== */
+/* app.js의 applyUiTheme()가 시간대+날씨+조명을 모두 반영한 실제 장면 밝기를 계산해서,
+   일정 밝기 이하이면(예: 밤, 흐린/비 오는 밤, 조명 끈 밤 등 - 24가지 배경 전부 대응)
+   <html>에 is-dark-scene 클래스를 붙여줍니다.
+   배경 사진이 어두워지면 기존의 짙은 갈색 글자가 잘 안 보이므로,
+   유리 배경은 더 짙게, 글자는 밝은 크림색으로 바꿔 대비를 확보합니다. */
+html.is-dark-scene{
+  --glass-bg:        rgba(24, 22, 20, 0.46);
+  --glass-bg-strong: rgba(24, 22, 20, 0.60);
+  --glass-border:    rgba(255, 255, 255, 0.14);
+  --glass-shadow:    none;
+
+  --glass-ink:       #F5EFE4;
+  --glass-ink-soft:  #D9CFBF;
+  --glass-ink-faint: #B7AC9B;
+  --glass-sep:       rgba(255, 255, 255, 0.16);
+  --glass-alert:     #F0A984;
+  --glass-active-bg: rgba(143, 174, 124, 0.28);
+  --glass-active-ink: #C9DDB8;
+}
+.glass-bar{
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  box-shadow: var(--glass-shadow);
+  color: var(--glass-ink);
+  transition: background 0.6s ease, border-color 0.6s ease, color 0.6s ease;
+}
+.glass-bar-strong{
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  box-shadow: var(--glass-shadow);
+  color: var(--glass-ink);
+  transition: background 0.6s ease, border-color 0.6s ease, color 0.6s ease;
+}
+
+/* ===================== 상단바 (사진 속 상태창 레이아웃) ===================== */
+.topbar{
+  position: relative;
+  z-index: 20;
+  display:flex; align-items:stretch;
+  gap: 2px;
+  margin: max(12px, env(safe-area-inset-top)) 14px 10px;
+  padding: 9px 10px;
+  border-radius: 20px;
+}
+.topbar-cell{
+  display:flex; align-items:center; gap:8px;
+  padding: 2px 8px;
+  border: none; background: none;
+  text-align: left;
+  cursor: default;
+}
+button.topbar-cell{ cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button.topbar-cell:active{ opacity: 0.7; }
+.topbar-clock{ flex: 1.1; }
+.topbar-weather{ flex: 1; }
+.topbar-icon{
+  font-size: 19px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(64,48,31,0.15));
+  flex-shrink: 0;
+}
+.topbar-cell-text{
+  display:flex; flex-direction:column; gap: 1px;
+  min-width: 0;
+}
+.topbar-primary{
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--glass-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-secondary{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--glass-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topbar-sep{
+  width: 1px;
+  align-self: center;
+  height: 26px;
+  background: var(--glass-sep);
+  flex-shrink: 0;
+}
+.topbar-right{
+  display:flex; align-items:center; gap:8px;
+  flex-shrink: 0;
+  padding-left: 4px;
+}
+.coin-pill{
+  display:flex; align-items:center; gap:5px;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--glass-ink);
+}
+.icon-btn{
+  width: 34px; height: 34px;
+  flex-shrink: 0;
+  display:flex; align-items:center; justify-content:center;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  font-size: 15px;
+}
+
+/* ===================== 카페 환경 스트립 (항상 표시) ===================== */
+.env-strip{
+  position: relative;
+  z-index: 20;
+  display:flex; align-items:center; gap:10px;
+  margin: 0 14px 12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  text-align: left;
+  width: calc(100% - 28px);
+  overflow: hidden;
+}
+.env-strip-item{
+  display:flex; align-items:center; gap: 5px;
+  flex-shrink: 0;
+}
+.env-strip-icon{ font-size: 14px; line-height: 1; }
+.env-strip-text{
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--glass-ink);
+  white-space: nowrap;
+}
+.env-strip-sep{
+  width: 1px; height: 14px;
+  background: var(--glass-sep);
+  flex-shrink: 0;
+}
+.env-strip-alert{
+  font-size: 11.5px;
+  color: var(--glass-alert);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none;
+  padding-left: 4px;
+  border-left: 1px solid var(--glass-sep);
+  margin-left: 2px;
+}
+.env-strip-alert.show{ display: block; }
+
+.env-strip-devices{
+  display:flex; align-items:center; gap: 6px;
+  flex-shrink: 0;
+}
+.env-strip-device{
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.32;
+  filter: grayscale(1);
+  transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
+}
+.env-strip-device.is-on{
+  opacity: 1;
+  filter: none;
+  transform: scale(1.08);
+}
+
+/* ===================== 스테이지(카페 내부) ===================== */
+.stage{
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- 창문 영역 --- */
+.window{
+  position: relative;
+  height: 38%;
+  min-height: 190px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sky{
+  /* day.png 배경 사진으로 대체되어 더 이상 하늘 그라디언트를 그리지 않음 (JS 호환을 위해 요소는 유지) */
+  display: none;
+}
+.sky::after{
+  content: none;
+}
+.sun-rays{
+  display: none;
+}
+@keyframes raysDrift{
+  0%{ transform: rotate(0deg); }
+  100%{ transform: rotate(360deg); }
+}
+
+.window-frame{
+  /* 사진 속에 이미 창문이 있으므로 그려진 창틀은 숨김 (JS 호환을 위해 요소는 유지) */
+  display: none;
+}
+.pane{ background: rgba(255,255,255,0.06); }
+
+.curtain{
+  display: none;
+}
+.curtain-left{ left: 0; }
+.curtain-right{ right: 0; animation-delay: -3.5s; }
+@keyframes curtainSway{
+  0%,100%{ transform: rotate(-1.1deg); }
+  50%{ transform: rotate(1.1deg); }
+}
+
+/* 사진 속 실제 펜던트 조명 위치에 맞춰 배치 (앱 전체 기준 %, 세로는 사진 그대로 매핑됨) */
+.lamp{
+  position:absolute; left: 83%; top: 32%; z-index: 4;
+  width: 100px; height: 140px;
+  transform: translate(-50%, 0);
+  border: none; background: none; padding: 0; margin: 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.lamp-glow{
+  position:absolute; top: 35%; left: 50%; transform: translate(-50%, -20%);
+  width: 130px; height: 130px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 140, 0.6), transparent 65%);
+  opacity: 0;
+  transition: opacity 2.5s ease;
+  pointer-events: none;
+}
+.lamp.is-on .lamp-glow{ opacity: 1; }
+
+/* --- 가습기 / 제습기: 사진 속 선반 맨 위 칸 (창문 쪽) 자리에 배치 (앱 전체 기준 %) --- */
+.cafe-device{
+  position:absolute; z-index: 4;
+  display:flex; align-items:flex-end; justify-content:center;
+  border: none; padding: 0; margin: 0;
+  background: none;
+  cursor: grab; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease;
+  touch-action: none;
+}
+.cafe-device:active{ transform: scale(0.94); cursor: grabbing; }
+.device-icon-img{
+  width: 34px; height: auto; display:block;
+  pointer-events:none; user-select:none; -webkit-user-drag:none;
+  filter: var(--scene-filter, none);
+  transition: filter 0.4s ease;
+}
+.cafe-device.is-on .device-icon-img{
+  filter: var(--scene-filter, none) drop-shadow(0 3px 5px rgba(64,48,31,0.28));
+}
+
+.humidifier{ left: 43%; top: 44%; }
+.dehumidifier{ left: 55%; top: 44%; }
+
+.device-mist{
+  position:absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 46px; height: 46px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(160, 210, 235, 0.55), transparent 65%);
+  opacity: 0; transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.humidifier.is-on .device-mist{ opacity: 1; animation: mistPulse 2.6s ease-in-out infinite; }
+@keyframes mistPulse{
+  0%,100%{ transform: translateX(-50%) scale(1); }
+  50%{ transform: translateX(-50%) scale(1.12); }
+}
+
+.device-breeze{
+  position:absolute; top: -6px; left: 50%; transform: translateX(-50%);
+  width: 46px; height: 46px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 230, 235, 0.55), transparent 65%);
+  opacity: 0; transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.dehumidifier.is-on .device-breeze{ opacity: 1; animation: breezeSpin 3s linear infinite; }
+@keyframes breezeSpin{
+  0%{ filter: hue-rotate(0deg); }
+  100%{ filter: hue-rotate(20deg); }
+}
+
+/* --- 먼지 입자 --- */
+.dust-layer{ position:absolute; inset:0; pointer-events:none; z-index: 5; }
+.dust{
+  position:absolute;
+  width: 3px; height: 3px;
+  background: rgba(255, 246, 220, 0.9);
+  border-radius: 50%;
+  opacity: 0;
+  animation: dustFloat linear infinite;
+  box-shadow: 0 0 4px rgba(255, 235, 190, 0.8);
+}
+@keyframes dustFloat{
+  0%{ opacity:0; transform: translate(0,0); }
+  10%{ opacity: var(--light-strength, 0.5); }
+  90%{ opacity: var(--light-strength, 0.5); }
+  100%{ opacity:0; transform: translate(var(--dx), var(--dy)); }
+}
+
+/* --- 실내 바닥/선반 영역 --- */
+.cafe-floor{
+  position: relative;
+  flex: 1;
+  background: transparent;
+  overflow: hidden;
+}
+.shelf-back{
+  /* 사진 속 실제 선반으로 대체 (JS 호환을 위해 요소는 유지) */
+  display: none;
+}
+.floor-plank{
+  display: none;
+}
+
+.pots-zone{
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+/* --- 화분 (플레이스홀더 일러스트) --- */
+.pot{
+  position: absolute;
+  width: 78px;
+  transform: translate(-50%, -100%);
+  display:flex; flex-direction: column; align-items:center;
+  cursor: grab;
+  touch-action: none;
+  animation: potSettle 0.4s ease;
+}
+.pot:active{ cursor: grabbing; }
+@keyframes potSettle{
+  0%{ transform: translate(-50%,-100%) scale(0.7); opacity:0; }
+  100%{ transform: translate(-50%,-100%) scale(1); opacity:1; }
+}
+.pot-sprout{
+  width: 20px; height: 26px;
+  margin-bottom: -4px;
+  position: relative;
+  z-index: 2;
+}
+.pot-sprout .leaf{
+  position:absolute; bottom:0; width: 14px; height: 20px;
+  background: var(--leaf);
+  border-radius: 60% 60% 60% 0;
+  transform-origin: bottom center;
+  animation: leafSway 4.5s ease-in-out infinite;
+  filter: var(--scene-filter, none);
+  transition: filter 1.4s ease;
+}
+.pot-sprout .leaf.l2{
+  background: var(--leaf-light);
+  transform: scaleX(-1);
+  left: 4px;
+  animation-delay: -2.2s;
+}
+.pot-sprout .leaf.l1{ left: -4px; }
+@keyframes leafSway{
+  0%,100%{ transform: rotate(-6deg); }
+  50%{ transform: rotate(6deg); }
+}
+.pot-body{
+  width: 56px; height: 42px;
+  background: linear-gradient(180deg, var(--terracotta), var(--terracotta-d));
+  border-radius: 6px 6px 16px 16px;
+  box-shadow: var(--shadow-pot);
+  position: relative;
+  filter: var(--scene-filter, none);
+  transition: filter 1.4s ease;
+}
+.pot-body::before{
+  content:"";
+  position:absolute; top:-5px; left:-4px; right:-4px; height: 8px;
+  background: var(--terracotta-d);
+  border-radius: 4px;
+}
+.pot-label{
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: var(--card-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  white-space: nowrap;
+}
+.pot.is-empty .pot-body{ opacity: 0.55; }
+.pot.is-empty .pot-body::after{
+  content:"＋";
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  color: rgba(255,255,255,0.85);
+  font-size: 18px;
+}
+
+/* --- 물주기 이펙트 --- */
+.water-fx{
+  position:absolute; inset: -34px 0 0 0;
+  pointer-events:none;
+  z-index: 6;
+  overflow: visible;
+}
+.water-drop{
+  position:absolute;
+  top: -20px;
+  width: 5px; height: 9px;
+  border-radius: 50% 50% 45% 45% / 65% 65% 40% 40%;
+  background: linear-gradient(180deg, rgba(170, 220, 255, 0.95), rgba(90, 165, 230, 0.9));
+  box-shadow: 0 0 3px rgba(90,165,230,0.5);
+  opacity: 0;
+  animation: waterDropFall 0.65s ease-in forwards;
+}
+.water-drop.d1{ left: 28%; animation-delay: 0s; }
+.water-drop.d2{ left: 50%; animation-delay: 0.09s; }
+.water-drop.d3{ left: 70%; animation-delay: 0.18s; }
+@keyframes waterDropFall{
+  0%{ opacity: 0; transform: translateY(0) scaleY(1); }
+  12%{ opacity: 1; }
+  78%{ opacity: 1; transform: translateY(44px) scaleY(1); }
+  100%{ opacity: 0; transform: translateY(50px) scaleY(0.4); }
+}
+.water-splash{
+  position:absolute; bottom: 2px; left:50%;
+  width: 50px; height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(150,210,255,0.6), transparent 72%);
+  opacity: 0;
+  transform: translateX(-50%) scale(0.3);
+  animation: waterSplash 0.7s ease-out 0.42s forwards;
+}
+@keyframes waterSplash{
+  0%{ opacity: 0; transform: translateX(-50%) scale(0.3); }
+  35%{ opacity: 0.9; transform: translateX(-50%) scale(1); }
+  100%{ opacity: 0; transform: translateX(-50%) scale(1.35); }
+}
+.water-sparkle{
+  position:absolute; bottom: 8px; left:50%; transform: translateX(-50%);
+  font-size: 13px;
+  opacity: 0;
+  animation: waterSparkle 0.9s ease-out 0.15s forwards;
+}
+@keyframes waterSparkle{
+  0%{ opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  40%{ opacity: 1; transform: translate(-50%, -14px) scale(1); }
+  100%{ opacity: 0; transform: translate(-50%, -26px) scale(0.9); }
+}
+
+/* --- 성장 단계별 식물(에셋 교체 전 플레이스홀더) --- */
+.plant{
+  position: relative;
+  display:flex; align-items:flex-end; justify-content:center;
+  height: calc(14px + var(--stage, 0) * 6px);
+  margin-bottom: -4px;
+  z-index: 2;
+}
+
+/* --- 사진 기반 식물(현재 몬스테라 전용) ---
+   사진 한 장에 화분+식물이 함께 담겨 있으므로, 이 클래스가 적용되면
+   .pot-body(플레이스홀더 화분)는 렌더링하지 않고 사진만 표시합니다. */
+.pot.pot-photo{ width: 84px; }
+.plant-photo{
+  width: 84px;
+  height: auto;
+  display:block;
+  margin-bottom: -2px;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: var(--scene-filter, none) drop-shadow(0 6px 8px rgba(64,48,31,0.22));
+  transition: filter 1.4s ease;
+}
+
+.plant .seed-dot{
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--wood-dark);
+  margin-bottom: 2px;
+}
+.plant .leaf{
+  position:absolute; bottom:0;
+  width: calc(9px + var(--stage, 0) * 2.2px);
+  height: calc(13px + var(--stage, 0) * 3px);
+  background: var(--leaf);
+  border-radius: 60% 60% 60% 0;
+  transform-origin: bottom center;
+  animation: leafSway 4.5s ease-in-out infinite;
+}
+.plant .leaf:nth-child(odd){ background: var(--leaf-light); transform: scaleX(-1); }
+.plant .leaf:nth-child(1){ left: 0; animation-delay: 0s; }
+.plant .leaf:nth-child(2){ left: -8px; animation-delay: -1.4s; }
+.plant .leaf:nth-child(3){ left: 8px; animation-delay: -2.8s; }
+.plant .leaf:nth-child(4){ left: -14px; animation-delay: -0.7s; }
+.plant .leaf:nth-child(5){ left: 14px; animation-delay: -3.5s; }
+.plant .bloom{
+  position:absolute; top: -8px; left:50%; transform: translateX(-50%);
+  font-size: calc(11px + var(--stage, 0) * 1.4px);
+  animation: bloomPop 0.4s ease;
+  z-index: 3;
+}
+.plant .bloom.bud{
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--terracotta);
+  font-size: 0;
+}
+@keyframes bloomPop{
+  0%{ transform: translateX(-50%) scale(0); opacity:0; }
+  100%{ transform: translateX(-50%) scale(1); opacity:1; }
+}
+.pot-alert{
+  position:absolute; top: -4px; right: -4px;
+  font-size: 13px; z-index: 4;
+}
+.pot-harvest-badge{
+  position:absolute; bottom: -4px; left: -4px;
+  font-size: 13px; z-index: 4;
+  animation: harvestBob 1.4s ease-in-out infinite;
+}
+@keyframes harvestBob{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-3px); }
+}
+
+/* --- 씨앗 심기: 식물 선택 카드 --- */
+.plant-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+.plant-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap: 4px;
+  background: var(--cream);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 12px;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+.plant-card:active{ transform: scale(0.97); }
+.plant-card .pc-icon{ font-size: 24px; }
+.plant-card .pc-name{
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--wood-deep);
+}
+.plant-card .pc-meta{
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink-faint);
+}
+.ghost-btn{
+  margin-top: 8px;
+  background: var(--cream);
+  color: var(--ink-soft);
+  border: 1px solid var(--paper-line);
+}
+
+/* --- 식물 관리 시트 --- */
+.care-stage{
+  font-size: 12.5px; color: var(--ink-soft);
+  margin: -4px 0 14px;
+}
+.care-bars{ display:flex; flex-direction:column; gap: 8px; margin-bottom: 14px; }
+.care-bar{ display:flex; align-items:center; gap: 10px; font-size: 12px; color: var(--ink-soft); }
+.care-bar span{ width: 46px; flex-shrink:0; }
+.bar-track{ flex:1; height: 8px; background: var(--paper-line); border-radius: 999px; overflow:hidden; }
+.bar-fill{ height:100%; border-radius: 999px; transition: width 0.5s ease; }
+.bar-fill.health{ background: linear-gradient(90deg, var(--leaf-light), var(--leaf)); }
+.bar-fill.water{ background: linear-gradient(90deg, #8FC7E0, #4E9BC2); }
+
+/* --- 화분 추가 FAB --- */
+.fab{
+  position: absolute;
+  right: 18px; bottom: 18px;
+  display:flex; align-items:center; gap:6px;
+  background: var(--leaf);
+  color: #fff;
+  padding: 12px 18px 12px 14px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(69, 96, 63, 0.35);
+  font-size: 14px;
+  z-index: 10;
+  transition: transform 0.15s ease;
+}
+.fab:active{ transform: scale(0.94); }
+.fab-icon{ font-size: 17px; line-height: 1; }
+
+/* --- 토스트 --- */
+.toast{
+  position:absolute; left:50%; bottom: 84px;
+  transform: translate(-50%, 12px);
+  background: var(--wood-deep);
+  color: var(--cream);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.35s ease;
+  z-index: 30;
+  max-width: 80%;
+  text-align: center;
+}
+.toast.show{ opacity: 1; transform: translate(-50%, 0); }
+
+/* --- 집중 시작 CTA 배너 (상단 스트립 바로 아래, 하단은 화분 공간으로 비워둠) --- */
+.focus-cta{
+  position: relative;
+  z-index: 20;
+  display:inline-flex; align-items:center; gap:10px;
+  width: fit-content;
+  max-width: calc(100% - 28px);
+  margin: 0 auto 10px;
+  padding: 10px 20px 10px 10px;
+  border-radius: 999px;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+.focus-cta:active{ transform: scale(0.98); }
+.focus-cta-icon{
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  display:flex; align-items:center; justify-content:center;
+  font-size: 18px;
+  background: rgba(91, 122, 84, 0.14);
+  border-radius: 50%;
+}
+.focus-cta-text{ display:flex; flex-direction:column; gap: 2px; min-width: 0; }
+.focus-cta-title{
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--glass-ink);
+}
+.focus-cta-sub{
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--glass-ink-soft);
+}
+
+/* ===================== 하단 선반 내비게이션 ===================== */
+.dock{
+  position: relative;
+  z-index: 20;
+  display:flex;
+  justify-content: space-around;
+  margin: 0 14px max(8px, env(safe-area-inset-bottom));
+  padding: 6px 4px;
+  border-radius: 999px;
+}
+.dock-item{
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  color: var(--glass-ink-faint);
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.dock-icon{ font-size: 14px; }
+.dock-item.is-active{
+  background: var(--glass-active-bg);
+  color: var(--glass-active-ink);
+}
+
+/* ===================== 하단 시트(모달) ===================== */
+.sheet-backdrop{
+  position: fixed; inset:0;
+  background: rgba(58, 50, 42, 0.35);
+  opacity:0; pointer-events:none;
+  transition: opacity 0.25s ease;
+  z-index: 50;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.sheet-backdrop.show{ opacity:1; pointer-events:auto; }
+.sheet{
+  width: 100%; max-width: 560px;
+  background: var(--card-bg);
+  border-radius: 24px 24px 0 0;
+  padding: 10px 22px 28px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
+}
+.sheet-backdrop.show .sheet{ transform: translateY(0); }
+.sheet-handle{
+  width: 40px; height: 4px; background: var(--paper-line);
+  border-radius: 999px; margin: 8px auto 16px;
+  background: var(--ink-faint); opacity: 0.4;
+}
+.sheet-body{ font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.sheet-body h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.sheet-body .sheet-btn{
+  margin-top: 16px;
+  width: 100%;
+  background: var(--leaf);
+  color: #fff;
+  padding: 13px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+.sheet-body .sheet-btn.harvest{
+  background: linear-gradient(135deg, var(--terracotta), var(--terracotta-d));
+  box-shadow: 0 4px 12px rgba(169, 95, 53, 0.28);
+}
+.sheet-body .sheet-btn.danger{
+  background: #C15B4A;
+  box-shadow: 0 4px 12px rgba(193, 91, 74, 0.28);
+}
+.sheet-body .sheet-btn.text-danger{
+  background: var(--cream);
+  color: #B0503F;
+  border: 1px solid rgba(176, 80, 63, 0.35);
+}
+/* ===================== 집중(공부) 오버레이 ===================== */
+.focus-overlay{
+  position: fixed; inset:0;
+  background: linear-gradient(180deg, #2E3B2A, #1C2419);
+  z-index: 80;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.35s ease;
+}
+.focus-overlay.show{ opacity:1; pointer-events:auto; }
+.focus-close{
+  position:absolute; top: max(18px, env(safe-area-inset-top)); right: 18px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: #EDE6D6; font-size: 15px;
+}
+.focus-content{
+  width: 100%; max-width: 380px;
+  display:flex; flex-direction: column; align-items:center;
+  padding: 0 26px;
+}
+.focus-eyebrow{
+  color: rgba(237,230,214,0.6);
+  font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+  margin: 0 0 18px;
+}
+.focus-ring-wrap{ position:relative; width: 220px; height: 220px; margin-bottom: 26px; }
+.focus-ring{ width:100%; height:100%; transform: rotate(-90deg); }
+.ring-track{
+  fill:none; stroke: rgba(255,255,255,0.12); stroke-width: 10;
+}
+.ring-progress{
+  fill:none; stroke: var(--leaf-light); stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 565.5;
+  stroke-dashoffset: 565.5;
+  transition: stroke-dashoffset 1s linear;
+}
+.focus-time{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: #F5EFE4;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.focus-presets{
+  display:flex; gap:8px; flex-wrap: wrap; justify-content:center;
+  margin-bottom: 14px;
+}
+.preset-btn{
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(237,230,214,0.8);
+  font-size: 13px;
+}
+.preset-btn.is-selected{
+  background: var(--leaf-light);
+  color: #1C2419;
+  font-weight: 700;
+}
+.custom-minutes-input{
+  display:none;
+  width: 140px;
+  text-align: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  margin-bottom: 14px;
+  background: rgba(255,255,255,0.1);
+  color: #F5EFE4;
+  font-size: 14px;
+}
+.custom-minutes-input.show{ display:block; }
+.focus-controls{
+  display:flex; gap: 10px;
+  width: 100%;
+  margin-top: 6px;
+}
+.focus-btn{
+  flex:1;
+  padding: 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.focus-btn.primary{ background: var(--leaf-light); color: #1C2419; }
+.focus-btn.ghost{ background: rgba(255,255,255,0.08); color: rgba(237,230,214,0.75); }
+.focus-btn[hidden]{ display:none; }
+.focus-hint{
+  margin-top: 18px;
+  font-size: 12.5px;
+  color: rgba(237,230,214,0.55);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ===================== 화분 확대 보기 오버레이 ===================== */
+.pot-zoom-overlay{
+  position: fixed; inset:0;
+  background: rgba(58, 50, 42, 0.45);
+  z-index: 45;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s ease;
+}
+.pot-zoom-overlay.show{ opacity:1; pointer-events:auto; }
+.pot-zoom-overlay .focus-close{
+  position:absolute; top: max(18px, env(safe-area-inset-top)); right: 18px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(58,50,42,0.5);
+  color: #F5EFE4; font-size: 15px;
+  z-index: 3;
+}
+.pot-zoom-content{
+  width: 100%; max-width: 560px; max-height: 92vh;
+  background: var(--card-bg);
+  border-radius: 24px 24px 0 0;
+  padding: 16px 22px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.18);
+}
+.pot-zoom-overlay.show .pot-zoom-content{ transform: translateY(0); }
+.pot-zoom-stage{
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 14px;
+  position: relative;
+  transition: filter 0.12s ease;
+}
+.pot-zoom-stage canvas{ display:block; width: 100%; height: auto; }
+.pot-zoom-stage.is-flash::after{
+  content:"";
+  position:absolute; inset:0;
+  background:#fff;
+  animation: zoomFlash 0.26s ease-out;
+}
+@keyframes zoomFlash{
+  0%{ opacity: 0.85; }
+  100%{ opacity: 0; }
+}
+
+/* --- 화분 확대 화면 물주기 이펙트 (캔버스 위 화분 위치에 맞춰 %로 배치) --- */
+.pot-zoom-water-fx{
+  position:absolute; inset:0;
+  pointer-events:none;
+  overflow: hidden;
+  z-index: 3;
+}
+.pot-zoom-water-fx .zoomfx-can{
+  position:absolute;
+  top: 4%; left: 50%;
+  transform: translateX(-50%) rotate(-18deg);
+  font-size: 26px;
+  opacity: 0;
+  animation: zoomfxCanTilt 0.9s ease-in-out forwards;
+}
+@keyframes zoomfxCanTilt{
+  0%{ opacity: 0; transform: translateX(-50%) rotate(0deg) translateY(-6px); }
+  18%{ opacity: 1; transform: translateX(-50%) rotate(-32deg) translateY(0); }
+  75%{ opacity: 1; transform: translateX(-50%) rotate(-32deg) translateY(0); }
+  100%{ opacity: 0; transform: translateX(-50%) rotate(-10deg) translateY(-4px); }
+}
+.pot-zoom-water-fx .zoomfx-drop{
+  position:absolute;
+  top: 10%;
+  width: 9px; height: 16px;
+  border-radius: 50% 50% 45% 45% / 65% 65% 40% 40%;
+  background: linear-gradient(180deg, rgba(170, 220, 255, 0.95), rgba(90, 165, 230, 0.9));
+  box-shadow: 0 0 5px rgba(90,165,230,0.5);
+  opacity: 0;
+  animation: zoomfxDropFall 0.7s ease-in forwards;
+}
+.pot-zoom-water-fx .zoomfx-drop.d1{ left: 43%; animation-delay: 0.18s; }
+.pot-zoom-water-fx .zoomfx-drop.d2{ left: 50%; animation-delay: 0.28s; }
+.pot-zoom-water-fx .zoomfx-drop.d3{ left: 57%; animation-delay: 0.38s; }
+@keyframes zoomfxDropFall{
+  0%{ opacity: 0; top: 10%; }
+  14%{ opacity: 1; }
+  80%{ opacity: 1; top: 52%; }
+  100%{ opacity: 0; top: 55%; }
+}
+.pot-zoom-water-fx .zoomfx-splash{
+  position:absolute; top: 53%; left: 50%;
+  width: 26%; height: 5%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(150,210,255,0.65), transparent 72%);
+  opacity: 0;
+  transform: translateX(-50%) scale(0.3);
+  animation: zoomfxSplash 0.75s ease-out 0.6s forwards;
+}
+@keyframes zoomfxSplash{
+  0%{ opacity: 0; transform: translateX(-50%) scale(0.3); }
+  35%{ opacity: 0.9; transform: translateX(-50%) scale(1); }
+  100%{ opacity: 0; transform: translateX(-50%) scale(1.4); }
+}
+.pot-zoom-water-fx .zoomfx-sparkle{
+  position:absolute; left: 50%; transform: translateX(-50%);
+  font-size: 20px;
+  opacity: 0;
+}
+.pot-zoom-water-fx .zoomfx-sparkle.s1{ top: 48%; animation: zoomfxSparkle 0.9s ease-out 0.42s forwards; }
+.pot-zoom-water-fx .zoomfx-sparkle.s2{ top: 50%; left: 40%; animation: zoomfxSparkle 0.9s ease-out 0.56s forwards; }
+.pot-zoom-water-fx .zoomfx-sparkle.s3{ top: 50%; left: 60%; animation: zoomfxSparkle 0.9s ease-out 0.66s forwards; }
+@keyframes zoomfxSparkle{
+  0%{ opacity: 0; transform: translate(-50%, 0) scale(0.6); }
+  40%{ opacity: 1; transform: translate(-50%, -14%) scale(1); }
+  100%{ opacity: 0; transform: translate(-50%, -24%) scale(0.9); }
+}
+.pot-zoom-info{ font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.pot-zoom-info h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.pot-zoom-actions{ display:flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.zoom-btn{
+  width: 100%;
+  background: var(--leaf);
+  color: #fff;
+  padding: 13px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+.zoom-btn.camera{
+  background: linear-gradient(135deg, var(--wood-mid), var(--wood-dark));
+  box-shadow: 0 4px 12px rgba(92, 68, 48, 0.28);
+}
+.zoom-btn.harvest{
+  background: linear-gradient(135deg, var(--terracotta), var(--terracotta-d));
+  box-shadow: 0 4px 12px rgba(169, 95, 53, 0.28);
+}
+.zoom-btn.ghost{
+  background: var(--cream);
+  color: var(--ink-soft);
+  border: 1px solid var(--paper-line);
+}
+.zoom-btn.text-danger{
+  background: var(--cream);
+  color: #B0503F;
+  border: 1px solid rgba(176, 80, 63, 0.35);
+}
+
+/* --- 날씨 연출 --- */
+.weather-layer{ position:absolute; inset:0; z-index: 3; pointer-events:none; opacity:0; transition: opacity 1.2s ease; overflow:hidden; }
+.weather-layer.active{ opacity: 1; }
+
+.snowflake{
+  position:absolute; top:-6px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  animation: snowFall linear infinite;
+}
+@keyframes snowFall{
+  0%{ transform: translateY(-10px) translateX(0); opacity:0; }
+  10%{ opacity:1; }
+  100%{ transform: translateY(220px) translateX(14px); opacity:0.2; }
+}
+
+/* --- 카페 환경 패널(시트 내부 콘텐츠) --- */
+.env-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+.env-stat{
+  background: var(--cream);
+  border-radius: 14px;
+  padding: 12px;
+}
+.env-stat-label{ font-size: 11px; color: var(--ink-faint); margin-bottom: 4px; }
+.env-stat-value{ font-size: 17px; font-weight: 700; color: var(--wood-deep); }
+.env-alert{
+  display:flex; gap:8px; align-items:flex-start;
+  background: var(--cream);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.env-alert .tip{ color: var(--leaf-deep); font-weight: 600; }
+.env-toggles{ display:flex; gap:8px; margin-top: 6px; flex-wrap: wrap; }
+.env-toggle{
+  flex:1;
+  min-width: 90px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--cream);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  border: 1px solid var(--paper-line);
+}
+.env-toggle.is-on{
+  background: var(--leaf);
+  color: #fff;
+  border-color: var(--leaf);
+}
+
+/* ===================== 백색소음 믹서 ===================== */
+.focus-mixer-btn{
+  position:absolute; top: max(18px, env(safe-area-inset-top)); left: 18px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: #EDE6D6; font-size: 15px;
+}
+.mixer-overlay{
+  position: fixed; inset:0;
+  background: rgba(58,50,42,0.4);
+  z-index: 90;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s ease;
+}
+.mixer-overlay.show{ opacity:1; pointer-events:auto; }
+.mixer-panel{
+  width: 100%; max-width: 560px;
+  height: 82vh;
+  background: var(--cream);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+  display:flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+}
+.mixer-overlay.show .mixer-panel{ transform: translateY(0); }
+.mixer-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 18px 20px 6px;
+}
+.mixer-header h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin:0; font-size: 18px;
+}
+.mixer-close-btn{
+  position: static;
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+}
+.mixer-presets{
+  display:flex; gap:8px; overflow-x:auto;
+  padding: 10px 20px 14px;
+}
+.preset-chip{
+  flex-shrink:0;
+  display:flex; align-items:center; gap:6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft);
+  font-size: 12.5px;
+  color: var(--wood-dark);
+  white-space: nowrap;
+}
+.preset-chip.is-add{ background: var(--leaf); color:#fff; }
+.preset-chip .chip-del{
+  color: var(--ink-faint);
+  font-size: 12px;
+  margin-left: 2px;
+}
+.mixer-scroll{
+  flex: 1; overflow-y: auto;
+  padding: 4px 20px 28px;
+}
+.mixer-group-title{
+  font-size: 12px; color: var(--ink-faint);
+  margin: 14px 2px 8px;
+  letter-spacing: 0.5px;
+}
+.mixer-list{ display:flex; flex-direction:column; gap: 4px; }
+.mixer-row{
+  display:flex; align-items:center; gap: 12px;
+  padding: 10px 4px;
+}
+.mixer-icon{ font-size: 18px; width: 22px; text-align:center; }
+.mixer-name{ font-size: 13.5px; color: var(--ink); width: 66px; flex-shrink:0; }
+.mixer-slider{
+  flex:1;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--paper-line);
+  outline: none;
+}
+.mixer-slider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--leaf);
+  box-shadow: 0 2px 6px rgba(69,96,63,0.4);
+  cursor: pointer;
+}
+.mixer-value{
+  width: 30px; text-align: right;
+  font-size: 12px; color: var(--ink-soft);
+}
+
+/* ===================== 상점 ===================== */
+.shop-overlay{
+  position: fixed; inset:0;
+  background: rgba(58,50,42,0.4);
+  z-index: 90;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s ease;
+}
+.shop-overlay.show{ opacity:1; pointer-events:auto; }
+.shop-panel{
+  width: 100%; max-width: 560px;
+  height: 84vh;
+  background: var(--cream);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+  display:flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+}
+.shop-overlay.show .shop-panel{ transform: translateY(0); }
+.shop-header{
+  display:flex; align-items:center; gap:10px;
+  padding: 18px 20px 4px;
+}
+.shop-header h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin:0; font-size: 18px;
+  flex: 1;
+}
+.shop-coin{
+  display:flex; align-items:center; gap:5px;
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--wood-dark);
+}
+.shop-tabs{
+  display:flex; gap:6px; overflow-x:auto;
+  padding: 12px 20px 10px;
+}
+.shop-tab{
+  flex-shrink:0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--card-bg);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-soft);
+}
+.shop-tab.is-active{ background: var(--leaf); color:#fff; }
+.shop-scroll{ flex:1; overflow-y:auto; padding: 6px 20px 28px; }
+.seed-cat-filters{
+  display:flex; gap:6px; overflow-x:auto;
+  margin: 0 0 12px;
+  padding-bottom: 2px;
+}
+.seed-cat-chip{
+  flex-shrink:0;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--paper-line);
+  color: var(--ink-soft);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.seed-cat-chip.is-active{
+  background: var(--wood-deep);
+  border-color: var(--wood-deep);
+  color: #fff;
+}
+.shop-soon{
+  font-size: 12.5px; color: var(--ink-faint); line-height:1.7;
+  text-align:center; margin: 6px 0 16px;
+}
+.shop-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.season-reco{ margin-bottom: 16px; }
+.season-reco-title{
+  font-size: 13px; color: var(--wood-dark);
+  font-weight: 700;
+  margin: 2px 2px 10px;
+}
+.season-reco-row{
+  display:flex; gap: 10px; overflow-x: auto;
+  padding-bottom: 4px;
+}
+.season-card{
+  flex-shrink: 0;
+  width: 128px;
+  display:flex; flex-direction:column; align-items:flex-start; gap: 4px;
+  background: linear-gradient(180deg, var(--leaf-pale), var(--card-bg) 55%);
+  border: 1px solid var(--leaf-light);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+}
+.season-card-icon{ font-size: 22px; }
+.season-card-name{ font-family: var(--font-display); font-size: 13px; color: var(--wood-deep); }
+.season-card-diff{ font-size: 10.5px; color: var(--leaf-deep); font-weight: 600; }
+.season-card-meta{ font-size: 10px; color: var(--ink-faint); line-height: 1.5; min-height: 30px; }
+.season-card-buy{
+  margin-top: 2px;
+  align-self: stretch;
+  text-align:center;
+  background: var(--leaf);
+  color: #fff;
+  padding: 6px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.shop-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap: 5px;
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+}
+.sc-icon{ font-size: 24px; }
+.sc-name{ font-family: var(--font-display); font-size: 13.5px; color: var(--wood-deep); }
+.sc-meta{ font-size: 11px; color: var(--ink-faint); line-height: 1.5; min-height: 28px; }
+.sc-buy{
+  margin-top: 4px;
+  width: 100%;
+  background: var(--leaf);
+  color: #fff;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.sc-buy:disabled{ opacity: 0.7; }
+
+/* ===================== 도감 ===================== */
+.dex-overlay{
+  position: fixed; inset:0;
+  background: rgba(58,50,42,0.4);
+  z-index: 90;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s ease;
+}
+.dex-overlay.show{ opacity:1; pointer-events:auto; }
+.dex-panel{
+  width: 100%; max-width: 560px;
+  height: 84vh;
+  background: var(--cream);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+  display:flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+}
+.dex-overlay.show .dex-panel{ transform: translateY(0); }
+.dex-header{
+  display:flex; align-items:center; gap:10px;
+  padding: 18px 20px 4px;
+}
+.dex-header h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin:0; font-size: 18px;
+  flex: 1;
+}
+.dex-progress{
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--wood-dark);
+}
+.dex-scroll{ flex:1; overflow-y:auto; padding: 14px 20px 28px; }
+.dex-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.dex-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap: 5px;
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+}
+.dex-card.is-locked{ opacity: 0.5; }
+.dex-icon{ font-size: 24px; }
+.dex-card.is-locked .dex-icon{ filter: grayscale(1); }
+.dex-name{ font-family: var(--font-display); font-size: 13.5px; color: var(--wood-deep); }
+.dex-name .dex-star{ color: var(--terracotta); font-size: 11px; margin-left: 2px; }
+.dex-meta{ font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
+.dex-stage-track{
+  width:100%; height: 5px; border-radius: 999px;
+  background: var(--paper-line); overflow: hidden; margin-top: 2px;
+}
+.dex-stage-fill{ height:100%; background: linear-gradient(90deg, var(--leaf-light), var(--leaf)); }
+.dex-lock-badge{
+  position:absolute; top:10px; right:10px;
+  font-size: 13px; color: var(--ink-faint);
+}
+
+/* ===================== 통계 ===================== */
+.stats-overlay{
+  position: fixed; inset:0;
+  background: rgba(58,50,42,0.4);
+  z-index: 90;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s ease;
+}
+.stats-overlay.show{ opacity:1; pointer-events:auto; }
+.stats-panel{
+  width: 100%; max-width: 560px;
+  height: 78vh;
+  background: var(--cream);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -12px 30px rgba(0,0,0,0.18);
+  display:flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.32s cubic-bezier(.2,.8,.2,1);
+}
+.stats-overlay.show .stats-panel{ transform: translateY(0); }
+.stats-header{
+  display:flex; align-items:center; gap:10px;
+  padding: 18px 20px 4px;
+}
+.stats-header h3{
+  font-family: var(--font-display);
+  color: var(--wood-deep);
+  margin:0; font-size: 18px;
+  flex: 1;
+}
+.stats-scroll{ flex:1; overflow-y:auto; padding: 14px 20px 28px; }
+.stats-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.stat-card{
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+}
+.stat-card-label{ font-size: 11px; color: var(--ink-faint); margin-bottom: 6px; }
+.stat-card-value{ font-size: 18px; font-weight: 700; color: var(--wood-deep); font-family: var(--font-display); }
+.stat-card-sub{ font-size: 11px; color: var(--ink-faint); margin-top: 4px; }
+.stat-card.wide{ grid-column: 1 / -1; }
+
+.ach-progress{
+  font-size: 12.5px; color: var(--ink-faint);
+  margin: 2px 2px 12px;
+}
+.ach-grid{
+  display:grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ach-card{
+  display:flex; flex-direction:column; align-items:flex-start; gap: 5px;
+  background: var(--card-bg);
+  border: 1px solid var(--paper-line);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-soft);
+  opacity: 0.55;
+}
+.ach-card.is-unlocked{
+  opacity: 1;
+  border-color: var(--leaf-light);
+  background: linear-gradient(180deg, var(--leaf-pale), var(--card-bg) 60%);
+}
+.ach-icon{ font-size: 22px; }
+.ach-title{ font-family: var(--font-display); font-size: 13px; color: var(--wood-deep); }
+.ach-desc{ font-size: 10.5px; color: var(--ink-faint); line-height: 1.5; }
+
+/* 큰 화면 대응 */
+@media (min-width: 640px){
+  .app{ padding-top: 12px; }
+}
+
+/* 동작 최소화 옵션 존중 */
+@media (prefers-reduced-motion: reduce){
+  .curtain, .sun-rays, .dust, .leaf{ animation: none !important; }
+}
