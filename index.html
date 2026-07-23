@@ -1,264 +1,571 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>그린노트 – 식물 카페</title>
 
-<!-- PWA / Safari 홈 화면 설정 -->
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#F5EFE4" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="그린노트" />
-<link rel="apple-touch-icon" href="assets/icon-180.png" />
-<link rel="icon" href="assets/icon-192.png" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#F5F7FB">
+    <link rel="manifest" href="manifest.json">
+    <title>TimeRoutine</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
 
-<link rel="stylesheet" href="styles.css" />
+    <script
+        src="https://accounts.google.com/gsi/client"
+        async
+        defer
+        onload="if(window.onGisLoad){window.onGisLoad();}"></script>
+
 </head>
 <body>
 
-<div class="app" id="app">
+    <div class="toastContainer" id="toastContainer"></div>
 
-  <!-- ===== 상단 상태바 (날짜/시간 · 날씨 · 코인/사운드) ===== -->
-  <header class="topbar glass-bar" id="topbar">
-    <div class="topbar-cell topbar-clock">
-      <span class="topbar-icon" id="timeIcon" aria-hidden="true">☀️</span>
-      <div class="topbar-cell-text">
-        <span class="topbar-primary" id="clockDate">–</span>
-        <span class="topbar-secondary" id="clockTime">–</span>
-      </div>
+    <!-- ========================= -->
+    <!-- HEADER -->
+    <!-- ========================= -->
+
+    <header class="header">
+        <div class="logo">Time<span>.</span></div>
+        <div class="headerButtons">
+            <button id="ddayHeaderButton" class="ddayHeaderButton" title="디데이">🏁 <span id="ddayHeaderText">디데이</span></button>
+            <button id="themeButton">🌙</button>
+        </div>
+    </header>
+
+    <!-- ========================= -->
+    <!-- MAIN -->
+    <!-- ========================= -->
+
+    <main id="app">
+
+        <!-- ========================= -->
+        <!-- HOME -->
+        <!-- ========================= -->
+
+        <section id="homePage" class="page active">
+
+            <div class="heroCard">
+                <p class="today" id="todayDate"></p>
+                <div class="heroClock" id="heroClock">--:--<span id="heroSeconds">--</span></div>
+                <div class="weatherRow" id="weatherRow">
+                    <span class="weatherEmoji" id="weatherEmoji">⛅</span>
+                    <div>
+                        <div class="weatherTemp" id="weatherTemp">--°</div>
+                        <div class="weatherDesc" id="weatherDesc">날씨 불러오는 중</div>
+                    </div>
+                    <div class="weatherLoc" id="weatherLoc"></div>
+                </div>
+            </div>
+
+            <section class="quoteCard">
+                <div class="quoteCardHeader">
+                    <h3>오늘의 문구</h3>
+                    <button id="addQuoteButton" class="quoteAddButton" title="나만의 문구 추가">+</button>
+                </div>
+                <p id="todayQuote"></p>
+                <button class="motivateButton" id="motivateButton">🔥 동기부여 영상 보기</button>
+            </section>
+
+        </section>
+
+        <!-- ========================= -->
+        <!-- SCHEDULE (시간표) -->
+        <!-- ========================= -->
+
+        <section id="schedulePage" class="page">
+
+            <div class="scheduleHeadRow">
+                <h2 class="pageTitle">시간표</h2>
+            </div>
+
+            <div class="searchRow">
+                <input id="scheduleSearchInput" placeholder="일정 제목·메모 검색">
+                <button class="searchAddButton" id="searchAddButton" title="새 일정 추가">+</button>
+            </div>
+
+            <div class="viewTabs" id="viewTabs">
+                <button class="viewTab active" data-view="rect">주간 시간표</button>
+                <button class="viewTab" data-view="circle">원형 시간표</button>
+                <button class="viewTab" data-view="list">리스트</button>
+                <button class="viewTab" data-view="calendar">달력</button>
+            </div>
+
+            <div class="dateNav" id="dateNavBar">
+                <button class="dateNavArrow" id="prevDayButton">‹</button>
+                <div class="dateNavLabel" id="scheduleDateLabel">
+                    -
+                    <small id="scheduleDaySub"></small>
+                </div>
+                <button class="dateNavArrow" id="nextDayButton">›</button>
+            </div>
+
+            <button class="dateNavToday hidden" id="gotoTodayButton">오늘로 이동</button>
+
+            <div id="captureArea">
+
+                <div id="rectView">
+                    <div class="rectTimetable" id="rectTimetable"></div>
+                </div>
+
+                <div id="listView" class="hidden">
+                    <div class="scheduleListWrap" id="scheduleListWrap"></div>
+                </div>
+
+                <div id="circleView" class="hidden">
+                    <div class="clockWrap" id="clockWrap">
+                        <svg id="clockSvg" viewBox="0 0 340 340" width="340" height="340" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+                        <div class="clockTooltip" id="clockTooltip"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="calendarView" class="hidden">
+                <div class="calendarHeadRow">
+                    <button class="dateNavArrow" id="calPrevMonthButton">‹</button>
+                    <div class="dateNavLabel" id="calendarMonthLabel">-</div>
+                    <button class="dateNavArrow" id="calNextMonthButton">›</button>
+                </div>
+                <div class="calendarWeekRow">
+                    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                </div>
+                <div class="calendarGrid" id="calendarGrid"></div>
+            </div>
+
+            <div class="templateSection">
+                <div class="sectionHead">
+                    <h3>일정 템플릿</h3>
+                    <button class="sectionAddButton" id="saveTemplateButton">+</button>
+                </div>
+                <div class="templateChipRow" id="templateChipRow"></div>
+            </div>
+
+        </section>
+
+        <!-- ========================= -->
+        <!-- TODO (할일) -->
+        <!-- ========================= -->
+
+        <section id="todoPage" class="page">
+
+            <h2 class="pageTitle">오늘의 할 일</h2>
+
+            <div class="todoAddRow">
+                <input id="todoInput" placeholder="할 일을 입력하세요 (Enter로 추가)">
+            </div>
+
+            <div class="todoList" id="todoList"></div>
+
+        </section>
+
+        <!-- ========================= -->
+        <!-- SETTINGS -->
+        <!-- ========================= -->
+
+        <section id="settingsPage" class="page">
+
+            <h2 class="pageTitle">설정</h2>
+
+            <div class="settingsList">
+
+                <div class="settingItem themeSettingItem">
+                    <span>🎨 테마</span>
+                    <div class="themeOptions" id="themeOptions">
+                        <button class="themeOption" data-theme="default">
+                            <span class="themeSwatch themeSwatchDefault"></span>
+                            기본
+                        </button>
+                        <button class="themeOption" data-theme="dark">
+                            <span class="themeSwatch themeSwatchDark"></span>
+                            다크
+                        </button>
+                        <button class="themeOption" data-theme="apple">
+                            <span class="themeSwatch themeSwatchApple"></span>
+                            메탈
+                        </button>
+                        <button class="themeOption" data-theme="glass">
+                            <span class="themeSwatch themeSwatchGlass"></span>
+                            글래스
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settingItem metalDarkSettingItem" id="metalDarkSettingItem">
+                    <span>⛓️ 메탈 다크 모드</span>
+                    <button class="switchToggle" id="metalDarkToggle" role="switch" aria-checked="true">
+                        <span class="switchKnob"></span>
+                    </button>
+                </div>
+
+
+
+                <button class="settingItem" id="googleDriveButton">
+                    <span>☁️ 구글 드라이브 자동 저장</span>
+                    <span class="driveStatusWrap">
+                        <span id="googleDriveStatus">연결하기</span>
+                        <small id="googleDriveTime"></small>
+                    </span>
+                </button>
+
+                <button class="settingItem" id="manualDriveBackupButton">
+                    <span>⬆️ 지금 바로 백업하기</span>
+                    <span>›</span>
+                </button>
+
+                <button class="settingItem" id="exportButton">
+                    <span>📤 전체 백업 (JSON)</span>
+                    <span>›</span>
+                </button>
+
+                <button class="settingItem" id="importButton">
+                    <span>📥 전체 가져오기 (JSON)</span>
+                    <span>›</span>
+                </button>
+
+                <input type="file" id="importFile" accept=".json" hidden>
+
+            </div>
+
+
+        </section>
+
+    </main>
+
+    <!-- ========================= -->
+    <!-- ADD BUTTON -->
+    <!-- ========================= -->
+
+    <button id="addButton" class="fab">+</button>
+
+    <!-- ========================= -->
+    <!-- EVENT (SCHEDULE) MODAL -->
+    <!-- ========================= -->
+
+    <div class="modal" id="eventModal">
+        <div class="modalSheet">
+
+            <div class="sheetHeader">
+                <h2 id="eventModalTitle">새 일정</h2>
+            </div>
+
+            <div class="inputGroup">
+                <label>제목</label>
+                <input id="eventTitleInput" placeholder="예) 아침 운동">
+            </div>
+
+            <div class="inputGroup" id="eventDateGroup">
+                <label>날짜</label>
+                <input type="date" id="eventDateInput">
+            </div>
+
+            <div class="doubleRow">
+                <div class="inputGroup">
+                    <label>시작 시간</label>
+                    <input type="time" id="eventStartInput" value="09:00">
+                </div>
+                <div class="inputGroup">
+                    <label>종료 시간</label>
+                    <input type="time" id="eventEndInput" value="10:00">
+                </div>
+            </div>
+
+            <div class="inputGroup">
+                <label>메모</label>
+                <textarea id="eventMemoInput" rows="3" placeholder="메모를 입력하세요."></textarea>
+            </div>
+
+
+            <div class="inputGroup">
+                <label>색상 프리셋</label>
+                <div class="presetRow" id="eventPresetRow"></div>
+                <div class="colorPickRow" id="eventColorRow"></div>
+                <label class="customColorLabel">직접 선택 (RGB)</label>
+                <div class="customColorRow">
+                    <input type="color" id="eventColorPicker" value="#4F8CFF">
+                    <input type="text" id="eventColorHex" maxlength="7" placeholder="#RRGGBB" autocomplete="off" autocapitalize="off" spellcheck="false">
+                </div>
+            </div>
+
+            <div class="inputGroup">
+                <label>반복 (요일 선택, 없으면 이 날짜에만)</label>
+                <div class="weekdayPickRow" id="eventWeekdayRow">
+                    <button data-day="0">일</button>
+                    <button data-day="1">월</button>
+                    <button data-day="2">화</button>
+                    <button data-day="3">수</button>
+                    <button data-day="4">목</button>
+                    <button data-day="5">금</button>
+                    <button data-day="6">토</button>
+                </div>
+            </div>
+
+            <div class="modalButtons">
+                <button id="eventSaveButton" class="primaryButton">저장</button>
+                <button id="eventCancelButton" class="secondaryButton">취소</button>
+            </div>
+
+            <div class="deleteRow hidden" id="eventCompleteRow">
+                <button class="completeButton" id="eventCompleteButton">✅ 완료 처리 (사진 기록)</button>
+            </div>
+
+            <div class="deleteRow hidden" id="eventDeleteRow">
+                <button class="dangerButton" id="eventDeleteButton">일정 삭제</button>
+            </div>
+
+        </div>
     </div>
-    <span class="topbar-sep" aria-hidden="true"></span>
-    <button class="topbar-cell topbar-weather" id="envStripWeatherBtn" title="카페 환경 자세히 보기">
-      <span class="topbar-icon" id="envStripWeatherIcon" aria-hidden="true">☀️</span>
-      <div class="topbar-cell-text">
-        <span class="topbar-primary" id="topTemp">–°</span>
-        <span class="topbar-secondary" id="envStripWeatherText">날씨 확인 중</span>
-      </div>
-    </button>
-    <span class="topbar-sep" aria-hidden="true"></span>
-    <div class="topbar-right">
-      <div class="coin-pill" title="코인 (다음 단계에서 연동)">
-        <span aria-hidden="true">🪙</span>
-        <span id="coinValue">0</span>
-      </div>
-      <button class="icon-btn" id="btnMixer" title="백색소음 믹서">
-        <span aria-hidden="true">🎧</span>
-      </button>
-    </div>
-  </header>
 
-  <!-- 카페 환경 스트립 (항상 표시, 탭하면 자세히 보기) -->
-  <button class="env-strip glass-bar" id="envStrip" title="카페 환경 자세히 보기">
-    <span class="env-strip-item">
-      <span class="env-strip-icon" aria-hidden="true">🔆</span>
-      <span class="env-strip-text" id="envStripLight">– %</span>
-    </span>
-    <span class="env-strip-sep" aria-hidden="true"></span>
-    <span class="env-strip-item">
-      <span class="env-strip-icon" aria-hidden="true">💧</span>
-      <span class="env-strip-text" id="envStripHumidity">– %</span>
-    </span>
-    <span class="env-strip-sep" aria-hidden="true"></span>
-    <span class="env-strip-devices" id="envStripDevices">
-      <span class="env-strip-device" id="envStripLampDot" title="조명" aria-hidden="true">💡</span>
-      <span class="env-strip-device" id="envStripHumidifierDot" title="가습기" aria-hidden="true">💦</span>
-      <span class="env-strip-device" id="envStripDehumidifierDot" title="제습기" aria-hidden="true">🌬️</span>
-    </span>
-    <span class="env-strip-alert" id="envStripAlert"></span>
-  </button>
+    <!-- ========================= -->
+    <!-- DDAY MODAL -->
+    <!-- ========================= -->
 
-  <!-- 집중(공부) 시작 배너: 상단 스트립 바로 아래로 이동 (하단 전체를 화분 배치 공간으로 비워둠) -->
-  <button class="focus-cta glass-bar-strong" id="btnFocusCta">
-    <span class="focus-cta-icon" aria-hidden="true">🌱</span>
-    <span class="focus-cta-text">
-      <span class="focus-cta-title">집중 시작하기</span>
-      <span class="focus-cta-sub" id="focusCtaSub">오늘 아직 집중 기록이 없어요</span>
-    </span>
-  </button>
+    <div class="modal" id="ddayModal">
+        <div class="modalSheet">
 
-  <!-- ===== 카페 메인 스테이지 ===== -->
-  <main class="stage" id="stage">
+            <div class="sheetHeader">
+                <h2 id="ddayModalTitle">새 디데이</h2>
+            </div>
 
-    <!-- 창문: 시간대에 따라 하늘빛이 자연스럽게 변함 -->
-    <section class="window" id="window">
-      <div class="sky" id="sky" aria-hidden="true"></div>
-      <div class="sun-rays" id="sunRays" aria-hidden="true"></div>
-      <div class="window-frame" aria-hidden="true">
-        <div class="pane"></div><div class="pane"></div>
-        <div class="pane"></div><div class="pane"></div>
-      </div>
-      <div class="curtain curtain-left" aria-hidden="true"></div>
-      <div class="curtain curtain-right" aria-hidden="true"></div>
-      <div class="weather-layer" id="weatherLayer" aria-hidden="true"></div>
-    </section>
+            <div class="inputGroup">
+                <label>이름</label>
+                <input id="ddayNameInput" placeholder="예) 수능, 여행, 시험">
+            </div>
 
-    <!-- 안내 말풍선 -->
-    <div class="toast" id="toast"></div>
+            <div class="inputGroup">
+                <label>날짜</label>
+                <input type="date" id="ddayDateInput">
+            </div>
 
-  </main>
+            <div class="modalButtons">
+                <button id="ddaySaveButton" class="primaryButton">저장</button>
+                <button id="ddayCancelButton" class="secondaryButton">취소</button>
+            </div>
 
-  <!-- 조명/가습기/제습기/먼지/화분: 사진 속 실제 창·선반 위치에 맞춰 화면(app) 전체 기준으로 배치 -->
-  <button class="lamp" id="lamp" title="조명 켜기/끄기" aria-label="조명 켜기/끄기">
-    <div class="lamp-glow" id="lampGlow"></div>
-  </button>
-  <button class="cafe-device humidifier" id="humidifierDevice" title="가습기 켜기/끄기" aria-label="가습기 켜기/끄기">
-    <div class="device-mist" id="humidifierMist"></div>
-    <img class="device-icon-img" src="assets/devices/humidifier.png" alt="가습기" draggable="false" />
-  </button>
-  <button class="cafe-device dehumidifier" id="dehumidifierDevice" title="제습기 켜기/끄기" aria-label="제습기 켜기/끄기">
-    <div class="device-breeze" id="dehumidifierBreeze"></div>
-    <img class="device-icon-img" src="assets/devices/dehumidifier.png" alt="제습기" draggable="false" />
-  </button>
-  <div class="dust-layer" id="dustLayer" aria-hidden="true"></div>
-  <div class="pots-zone" id="potsZone">
-    <!-- 화분은 app.js 에서 동적으로 렌더됩니다 -->
-  </div>
+            <div class="deleteRow hidden" id="ddayDeleteRow">
+                <button class="dangerButton" id="ddayDeleteButton">디데이 삭제</button>
+            </div>
 
-  <!-- ===== 하단 선반형 내비게이션 ===== -->
-  <nav class="dock glass-bar">
-    <button class="dock-item is-active" data-tab="home">
-      <span class="dock-icon" aria-hidden="true">🏠</span><span>홈</span>
-    </button>
-    <button class="dock-item" data-tab="shop">
-      <span class="dock-icon" aria-hidden="true">🛍️</span><span>상점</span>
-    </button>
-    <button class="dock-item" id="dockAddPot" data-tab="addpot">
-      <span class="dock-icon" aria-hidden="true">➕</span><span>화분 놓기</span>
-    </button>
-    <button class="dock-item" data-tab="dex">
-      <span class="dock-icon" aria-hidden="true">📖</span><span>도감</span>
-    </button>
-    <button class="dock-item" data-tab="stats">
-      <span class="dock-icon" aria-hidden="true">📊</span><span>통계</span>
-    </button>
-  </nav>
-
-</div>
-
-<!-- ===== 집중(공부) 오버레이 ===== -->
-<div class="focus-overlay" id="focusOverlay">
-  <button class="focus-close" id="focusClose" aria-label="닫기">✕</button>
-  <button class="focus-mixer-btn" id="focusMixerBtn" aria-label="백색소음 믹서 열기">🎧</button>
-  <div class="focus-content">
-    <p class="focus-eyebrow">오늘의 집중</p>
-    <div class="focus-ring-wrap">
-      <svg class="focus-ring" viewBox="0 0 200 200">
-        <circle class="ring-track" cx="100" cy="100" r="90"></circle>
-        <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="90"></circle>
-      </svg>
-      <div class="focus-time" id="focusTimeDisplay">25:00</div>
+        </div>
     </div>
 
-    <div class="focus-presets" id="focusPresets">
-      <button class="preset-btn" data-min="15">15분</button>
-      <button class="preset-btn is-selected" data-min="25">25분</button>
-      <button class="preset-btn" data-min="50">50분</button>
-      <button class="preset-btn" data-min="custom">직접 입력</button>
-    </div>
-    <input type="number" id="customMinutes" class="custom-minutes-input" placeholder="분 단위로 입력" min="1" max="180" />
+    <!-- ========================= -->
+    <!-- DDAY LIST MODAL (헤더 버튼) -->
+    <!-- ========================= -->
 
-    <div class="focus-controls">
-      <button class="focus-btn ghost" id="btnFocusStop" hidden>그만하기</button>
-      <button class="focus-btn primary" id="btnFocusStart">집중 시작</button>
-      <button class="focus-btn primary" id="btnFocusPause" hidden>일시정지</button>
-    </div>
-    <p class="focus-hint" id="focusHint">집중하는 동안에는 방해 요소가 모두 잠시 멈춰요 🌿</p>
-  </div>
-</div>
+    <div class="modal" id="ddayListModal">
+        <div class="modalSheet">
 
-<!-- ===== 화분 확대 보기 오버레이 (물주기/잡초뽑기/사진찍기 등) ===== -->
-<div class="pot-zoom-overlay" id="potZoomOverlay">
-  <button class="focus-close" id="potZoomClose" aria-label="닫기">✕</button>
-  <div class="pot-zoom-content">
-    <div class="pot-zoom-stage" id="potZoomStage">
-      <canvas id="potZoomCanvas" width="640" height="760"></canvas>
-      <div class="pot-zoom-water-fx" id="potZoomWaterFx" aria-hidden="true"></div>
-    </div>
-    <div class="pot-zoom-info" id="potZoomInfo"></div>
-    <div class="pot-zoom-actions" id="potZoomActions"></div>
-  </div>
-</div>
+            <div class="sheetHeader">
+                <h2>디데이</h2>
+            </div>
 
-<!-- ===== 백색소음 믹서 오버레이 ===== -->
-<div class="mixer-overlay" id="mixerOverlay">
-  <div class="mixer-panel">
-    <div class="mixer-header">
-      <h3>백색소음 믹서</h3>
-      <button class="focus-close mixer-close-btn" id="mixerClose" aria-label="닫기">✕</button>
+            <div class="ddayListWrap" id="ddayListWrap"></div>
+
+            <div class="modalButtons">
+                <button id="ddayListAddButton" class="primaryButton">+ 새 디데이</button>
+                <button id="ddayListCloseButton" class="secondaryButton">닫기</button>
+            </div>
+
+        </div>
     </div>
 
-    <div class="mixer-presets" id="mixerPresets">
-      <button class="preset-chip is-add" id="btnSavePreset">＋ 지금 조합 저장</button>
+    <!-- ========================= -->
+    <!-- TODO ADD MODAL -->
+    <!-- ========================= -->
+
+    <div class="modal" id="todoModal">
+        <div class="modalSheet">
+            <div class="sheetHeader">
+                <h2>할 일 추가</h2>
+            </div>
+            <div class="inputGroup">
+                <label>내용</label>
+                <input id="todoModalInput" placeholder="예) 영어 단어 30개 외우기">
+            </div>
+            <div class="modalButtons">
+                <button id="todoModalSaveButton" class="primaryButton">추가</button>
+                <button id="todoModalCancelButton" class="secondaryButton">취소</button>
+            </div>
+        </div>
     </div>
 
-    <div class="mixer-scroll">
-      <p class="mixer-group-title">기본 사운드</p>
-      <div class="mixer-list" id="mixerAmbientList"></div>
-      <p class="mixer-group-title">추가 효과음</p>
-      <div class="mixer-list" id="mixerEffectList"></div>
-    </div>
-  </div>
-</div>
+    <!-- ========================= -->
+    <!-- QUOTE MODAL -->
+    <!-- ========================= -->
 
-<!-- ===== 상점 오버레이 ===== -->
-<div class="shop-overlay" id="shopOverlay">
-  <div class="shop-panel">
-    <div class="shop-header">
-      <h3>상점</h3>
-      <div class="shop-coin"><span aria-hidden="true">🪙</span><span id="shopCoinValue">0</span></div>
-      <button class="focus-close mixer-close-btn" id="shopClose" aria-label="닫기">✕</button>
+    <div class="modal" id="quoteModal">
+        <div class="modalSheet">
+            <div class="sheetHeader">
+                <h2>나만의 문구</h2>
+            </div>
+            <div class="inputGroup">
+                <label>새 문구 입력</label>
+                <textarea id="quoteTextInput" rows="3" placeholder="예) 나만의 응원 문구를 적어보세요."></textarea>
+            </div>
+            <div class="modalButtons">
+                <button id="quoteAddSaveButton" class="primaryButton">추가</button>
+                <button id="quoteCloseButton" class="secondaryButton">닫기</button>
+            </div>
+        </div>
     </div>
-    <div class="shop-tabs" id="shopTabs">
-      <button class="shop-tab is-active" data-cat="seeds">🌱 씨앗</button>
-      <button class="shop-tab" data-cat="tools">🧰 도구</button>
-      <button class="shop-tab" data-cat="pots">🪴 화분</button>
-    </div>
-    <div class="shop-scroll" id="shopScroll"></div>
-  </div>
-</div>
 
-<!-- ===== 도감 오버레이 ===== -->
-<div class="dex-overlay" id="dexOverlay">
-  <div class="dex-panel">
-    <div class="dex-header">
-      <h3>도감</h3>
-      <div class="dex-progress" id="dexProgress">0 / 0</div>
-      <button class="focus-close mixer-close-btn" id="dexClose" aria-label="닫기">✕</button>
-    </div>
-    <div class="dex-scroll" id="dexScroll"></div>
-  </div>
-</div>
+    <!-- ========================= -->
+    <!-- COMPLETE / PHOTO MODAL -->
+    <!-- ========================= -->
 
-<!-- ===== 통계 오버레이 ===== -->
-<div class="stats-overlay" id="statsOverlay">
-  <div class="stats-panel">
-    <div class="stats-header">
-      <h3>통계</h3>
-      <button class="focus-close mixer-close-btn" id="statsClose" aria-label="닫기">✕</button>
-    </div>
-    <div class="shop-tabs" id="statsTabs">
-      <button class="shop-tab is-active" data-stab="stats">📊 통계</button>
-      <button class="shop-tab" data-stab="ach">🏆 업적</button>
-    </div>
-    <div class="stats-scroll" id="statsScroll"></div>
-  </div>
-</div>
+    <div class="modal" id="celebrateModal">
+        <div class="modalSheet">
+            <div class="sheetHeader celebrateHeader">
+                <div class="celebrateEmoji">🎉</div>
+                <h2 id="celebrateTitle">일정 완료!</h2>
+                <p class="celebrateSub">기록으로 남길 사진을 올려보세요.</p>
+            </div>
 
-<!-- 화분 상세/심기 모달 (플레이스홀더) -->
-<div class="sheet-backdrop" id="sheetBackdrop">
-  <div class="sheet" id="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-body" id="sheetBody"></div>
-  </div>
-</div>
+            <div class="inputGroup">
+                <label>기록 사진 (선택)</label>
+                <label class="photoUpload" id="photoUploadArea">
+                    <input type="file" id="photoInput" accept="image/*" hidden>
+                    <div class="photoPlaceholder" id="photoPlaceholder">
+                        <span>📷</span>
+                        <p>탭해서 사진 선택</p>
+                    </div>
+                    <img id="photoPreview" class="photoPreview hidden" alt="기록 사진 미리보기">
+                </label>
+            </div>
 
-<script src="sound-engine.js"></script>
-<script src="app.js"></script>
+            <div class="modalButtons">
+                <button id="celebrateSaveButton" class="primaryButton">완료 저장</button>
+                <button id="celebrateSkipButton" class="secondaryButton">사진 없이 완료</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- PHOTO VIEW MODAL -->
+    <!-- ========================= -->
+
+    <div class="modal photoViewModal" id="photoViewModal">
+        <div class="photoViewContent">
+            <button id="closePhotoView" class="photoViewClose">✕</button>
+            <img id="photoViewImage" alt="기록 사진">
+            <p id="photoViewTitle"></p>
+            <div class="photoViewActions">
+                <button id="deletePhotoButton" class="photoActionButton delete">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- WELCOME / INSTALL GUIDE MODAL -->
+    <!-- ========================= -->
+
+    <div class="modal" id="welcomeModal">
+        <div class="modalSheet">
+            <div class="sheetHeader welcomeHeader">
+                <div class="welcomeEmoji">✨</div>
+                <h2>Time Routine에 오신 걸 환영해요</h2>
+                <p class="welcomeSub">홈 화면에 추가하면 앱처럼 더 편하게 쓸 수 있어요.</p>
+            </div>
+
+            <div class="installGuide">
+                <div class="installStep">
+                    <span class="installStepNum">1</span>
+                    <div class="installStepText">
+                        <strong>Safari에서 열기</strong>
+                        <p>다른 앱 안에서 열었다면 Safari로 열어주세요.</p>
+                    </div>
+                </div>
+
+                <div class="installStep">
+                    <span class="installStepNum">2</span>
+                    <div class="installStepText">
+                        <strong>공유 버튼 탭하기</strong>
+                        <p>화면 하단의 <span class="installIcon">⎋</span> 공유 아이콘을 눌러주세요.</p>
+                    </div>
+                </div>
+
+                <div class="installStep">
+                    <span class="installStepNum">3</span>
+                    <div class="installStepText">
+                        <strong>더보기 선택</strong>
+                        <p>목록을 아래로 내려 "더보기"를 눌러주세요.</p>
+                    </div>
+                </div>
+
+                <div class="installStep">
+                    <span class="installStepNum">4</span>
+                    <div class="installStepText">
+                        <strong>홈 화면에 추가</strong>
+                        <p>"홈 화면에 추가"를 선택하면 아이콘이 생성돼요.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="welcomeDriveNote">
+                <span class="welcomeDriveIcon">☁️</span>
+                <span>설정에서 구글 드라이브를 연결하면 시간표와 디데이가 자동으로 백업돼요.</span>
+            </div>
+
+            <div class="modalButtons">
+                <button id="welcomeCloseButton" class="primaryButton">확인했어요</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- BOTTOM NAVIGATION -->
+    <!-- ========================= -->
+
+    <nav class="bottomNav" id="bottomNav">
+
+        <div class="navHandle" id="navHandle"></div>
+
+        <button class="navButton active" data-page="homePage">
+            <span class="navIcon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 11.5 12 4l8 7.5" />
+                    <path d="M6 10v9a1 1 0 0 0 1 1h3v-6h4v6h3a1 1 0 0 0 1-1v-9" />
+                </svg>
+            </span>
+            <small>홈</small>
+        </button>
+
+        <button class="navButton" data-page="schedulePage">
+            <span class="navIcon">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3.5 2" />
+                </svg>
+            </span>
+            <small>시간표</small>
+        </button>
+
+        <button class="navButton" data-page="todoPage">
+            <span class="navIcon">
+                <svg viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="4" />
+                    <path d="M8 12.5l2.5 2.5L16 9.5" />
+                </svg>
+            </span>
+            <small>할일</small>
+        </button>
+
+        <button class="navButton" data-page="settingsPage">
+            <span class="navIcon">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </span>
+            <small>설정</small>
+        </button>
+
+    </nav>
+
+    <div class="restoreHandle" id="restoreHandle" aria-label="UI 보이기"></div>
+
+    <script src="app.js"></script>
+
 </body>
 </html>
